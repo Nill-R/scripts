@@ -3,7 +3,7 @@
 # MySQL backup script
 # This script is licensed under GNU GPLv2+
 DATE=$(date +%Y%m%d%H%M)
-$BACKUP_PATH=/backup/mysql
+BACKUP_PATH=/backup/mysql
 
 for DB in $(echo "show databases" | mysql --defaults-file=/etc/mysql/debian.cnf -N); do
 	mysqldump --defaults-file=/etc/mysql/debian.cnf $DB >$BACKUP_PATH/${DB}_${DATE}.sql
