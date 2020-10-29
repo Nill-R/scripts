@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 display_usage() {
-    printf "Usage: $(basename $0) dns_provider_name domain action\n"
+    printf "Usage: $(basename %s) dns_provider_name domain action\n" "$0"
 }
 
 DNS_PROVIDER=$1
@@ -13,7 +13,7 @@ if [ $(id -u) = 0 ]; then
    CONF_PATH="/etc"
    else
    CONF_PATH="$HOME/.local/etc"
-   mkdir -p $CONF_PATH
+   mkdir -p "$CONF_PATH"
 fi
 
 DNS_PROVIDER_CREDENTIALS="$CONF_PATH/lego/$DNS_PROVIDER"
@@ -23,17 +23,17 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-if [ -d $DNS_PROVIDER ]; then
+if [ -d "$DNS_PROVIDER" ]; then
         printf "DNS provider does not set!\n"
         exit 1
 fi
 
-if [ -d $DOMAIN ]; then
+if [ -d "$DOMAIN" ]; then
         printf "Domain does not set!\n"
         exit 1
 fi
 
-if [ -d $ACTION ]; then
+if [ -d "$ACTION" ]; then
         printf "Action does not set!\n"
         exit 1
 fi
@@ -51,11 +51,11 @@ if [ ! -f "$DNS_PROVIDER_CREDENTIALS" ]; then
         exit 1
 fi
 
-source $DNS_PROVIDER_CREDENTIALS
+source "$DNS_PROVIDER_CREDENTIALS"
 
-lego --dns $DNS_PROVIDER \
-     --domains *.$DOMAIN \
-     --domains $DOMAIN \
-     --email $EMAIL \
+lego --dns "$DNS_PROVIDER" \
+     --domains *."$DOMAIN" \
+     --domains "$DOMAIN" \
+     --email "$EMAIL" \
      --path="$CONF_PATH/letsencrypt/$DOMAIN" \
-     --accept-tos $ACTION
+     --accept-tos "$ACTION"
