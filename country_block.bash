@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# ##############################################################################
 # Description:  Uses IPSET and IPTABLES to block full countries from accessing the server for all ports and protocols
 # Syntax:       countries_block.bash countrycode [countrycode] ......
 #               Use the standard locale country codes to get the proper IP list. eg.
@@ -15,7 +17,7 @@ sourceURL="http://www.ipdeny.com/ipblocks/data/countries/"
 # Verifying that the program 'ipset' is installed
 if ! (dpkg -l | grep '^ii  ipset' &>/dev/null); then
 	echo "ERROR: 'ipset' package is not installed and required."
-	echo "Please install it with the command 'apt-get install ipset' and start this script again"
+	echo "Please install it with the command 'apt install ipset' and start this script again"
 	exit 1
 fi
 [ -e /sbin/ipset ] && ipset="/sbin/ipset" || ipset="/usr/sbin/ipset"
