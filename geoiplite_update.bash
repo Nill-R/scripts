@@ -4,11 +4,11 @@ LICENSE_KEY=YOUR_LICENSE_KEY_HERE
 GEOIP_DIR=YOUR_GEOIP_DIR_HERE
 
 cd $(mktemp -d /tmp/GeoIP.XXXXXXX)
-TEMP_DIR=`pwd`
+TEMP_DIR=$(pwd)
 mkdir -p $GEOIP_DIR
 
 curl "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=$LICENSE_KEY&suffix=tar.gz" -o GeoLite-Country.tar.gz
-curl "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$LICENSE_KEY&suffix=tar.gz"  -o GeoLite2-City.tar.gz
+curl "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$LICENSE_KEY&suffix=tar.gz" -o GeoLite2-City.tar.gz
 curl "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$LICENSE_KEY&suffix=tar.gz" -o GeoLite-ASN.tar.gz
 
 tar xzf GeoLite2-City.tar.gz
