@@ -54,6 +54,7 @@ fi
 source "$DNS_PROVIDER_CREDENTIALS"
 
 lego --dns "$DNS_PROVIDER" \
+     --dns.resolvers 1.1.1.1 \
      --domains *."$DOMAIN" \
      --domains "$DOMAIN" \
      --email "$EMAIL" \
