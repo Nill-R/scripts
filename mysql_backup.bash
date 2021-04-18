@@ -10,21 +10,21 @@ MYSQLDUMP=$(which mysqldump)
 COMP=$(which zstd)
 
 if [ ! -f "$MYSQLDUMP" ]; then
-        printf "ERROR: The mysqldump not installed.\n"
-        printf "FIX: Please install mysqldump\n"
-        exit 1
+	printf "ERROR: The mysqldump not installed.\n"
+	printf "FIX: Please install mysqldump\n"
+	exit 1
 fi
 
 if [ ! -f "$COMP" ]; then
-        printf "ERROR: The zstd not installed.\n"
-        printf "FIX: Please install zstd\n"
-        exit 1
+	printf "ERROR: The zstd not installed.\n"
+	printf "FIX: Please install zstd\n"
+	exit 1
 fi
 
 for DB in $(echo "show databases" | mysql --defaults-file=/etc/mysql/debian.cnf -N); do
-        $MYSQLDUMP --defaults-file=/etc/mysql/debian.cnf $DB >$BACKUP_PATH/${DB}_${DATE}.sql
+	$MYSQLDUMP --defaults-file=/etc/mysql/debian.cnf $DB >$BACKUP_PATH/${DB}_${DATE}.sql
 
-        $COMP -19 --rm $BACKUP_PATH/${DB}_${DATE}.sql
+	$COMP -19 --rm $BACKUP_PATH/${DB}_${DATE}.sql
 done
 
 # purge old dumps
