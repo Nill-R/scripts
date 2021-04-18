@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 apt update
-apt -y install gdebi-core lsb-release software-properties-common
+apt -y install gdebi-core lsb-release software-properties-common apt-https-transport
 
 CODENAME=$(lsb_release -c -s)
 
