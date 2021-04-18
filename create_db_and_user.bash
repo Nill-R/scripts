@@ -4,7 +4,6 @@ EXPECTED_ARGS=2
 E_BADARGS=65
 MYSQL=$(which mysql)
 PASS=$(tr -cd '[:alnum:]' </dev/urandom | fold -w24 | head -n1)
-echo $PASS
 
 Q1="CREATE DATABASE IF NOT EXISTS $1;"
 Q2="GRANT USAGE ON *.* TO $2@localhost IDENTIFIED BY '$PASS';"
@@ -17,3 +16,8 @@ if [ $# -ne $EXPECTED_ARGS ]; then
 	exit $E_BADARGS
 fi
 $MYSQL -e "$SQL"
+
+printf "db user: $2\n"
+printf "db name: $1\n"
+printf "db pass: $PASS\n"
+exit 0
