@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 
 apt update
-apt -y install gdebi-core
+apt -y install gdebi-core lsb-release
+
+CODENAME=$(lsb_release -c -s)
+
+printf "deb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-backports main restricted universe multiverse\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security main restricted\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security universe\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security multiverse">/etc/apt/sources.list
+
 cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=$(pwd)
 
 # add mc repo and repo key
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
 gdebi --n tataranovich-keyring_2020.06.12_all.deb
-printf "deb http://www.tataranovich.com/ubuntu bionic main\n" >/etc/apt/sources.list.d/mc.list
+printf "deb http://www.tataranovich.com/ubuntu $CODENAME main\n" >/etc/apt/sources.list.d/mc.list
 
 # add MariaDB repo
 wget https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
@@ -23,16 +28,24 @@ apt -y dist-upgrade
 apt -y nginx-module-brotli nginx-module-cache-purge nginx-module-ct nginx-module-devel-kit nginx-module-fancyindex nginx-module-geoip nginx-module-geoip2 nginx-module-graphite nginx-module-http-auth-pam nginx-module-http-echo nginx-module-http-headers-more nginx-module-http-subs-filter nginx-module-image-filter nginx-module-lenght-hiding-filter nginx-module-lua nginx-module-mail nginx-module-naxsi nginx-module-nchan nginx-module-njs nginx-module-pagespeed nginx-module-perl nginx-module-rds-json nginx-module-rtmp nginx-module-session-binding-proxy nginx-module-stream nginx-module-stream-sts nginx-module-sts nginx-module-testcookie nginx-module-ts nginx-module-upload-progress nginx-module-upstream-fair nginx-module-upstream-order nginx-module-vts nginx-module-xslt nginx-module-http-proxy-connect
 
 # install utilites
-apt -y install git mc curl wget pydf ncdu vim bash-completion grc ssh-import-id tmux screen molly-guard htop python3-pip
+apt -y install git mc curl wget pydf ncdu vim bash-completion grc ssh-import-id tmux screen molly-guard htop python3-pip zstd
 pip3 install apprise telegram-send
 ssh-import-id gh:Nill-R
 sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/g" /etc/ssh/sshd_config
 systemctl restart ssh
 
+# downloads scripts
+wget https://github.com/Nill-R/scripts/raw/master/mysql_backup.bash
+wget https://github.com/Nill-R/scripts/raw/master/create_db_and_user.bash
+wget https://github.com/Nill-R/scripts/raw/master/lego_cert.bash
+chmod +x *.bash
+mv ./*.bash /usr/local/bin/
+
 cd $HOME
 git clone https://github.com/Nill-R/bashrc.git
 ./bashrc/enable_bashrc.bash
 source $HOME/.bashrc
+printf ":set paste\n:set nu\n" >~/.vimrc
 
 wget -c https://gist.github.com/Nill-R/ad2e95964c7b1ce50bcc5db52c0809a9/raw/9ad06bd17ebcbf7860f094ffa00226e009621451/.tmux.conf
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
