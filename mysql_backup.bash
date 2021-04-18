@@ -8,7 +8,7 @@ BACKUP_PATH=/backup/mysql
 for DB in $(echo "show databases" | mysql --defaults-file=/etc/mysql/debian.cnf -N); do
 	mysqldump --defaults-file=/etc/mysql/debian.cnf $DB >$BACKUP_PATH/${DB}_${DATE}.sql
 
-	xz -e $BACKUP_PATH/${DB}_${DATE}.sql
+	zstd -19 --rm $BACKUP_PATH/${DB}_${DATE}.sql
 done
 
 # purge old dumps
