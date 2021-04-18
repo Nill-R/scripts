@@ -10,6 +10,8 @@ printf "deb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME main restricted\nd
 cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=$(pwd)
 
+apt update
+
 # add mc repo and repo key
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
 gdebi --n tataranovich-keyring_2020.06.12_all.deb
