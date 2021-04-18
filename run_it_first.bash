@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 apt update
-apt -y install gdebi
+apt -y install gdebi-core
 cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=`pwd`
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
 gdebi --n tataranovich-keyring_2020.06.12_all.deb
 printf "deb http://www.tataranovich.com/ubuntu bionic main\n" >/etc/apt/sources.list.d/mc.list
+rm -rf $TEMP_DIR
 apt update
 apt -y dist-upgrade
 apt -y install git mc curl wget pydf ncdu vim bash-completion grc ssh-import-id tmux screen molly-guard htop
