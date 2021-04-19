@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 apt update
-apt -y install gdebi-core lsb-release software-properties-common apt-https-transport curl
+apt -y install lsb-release
 
 CODENAME=$(lsb_release -c -s)
 
@@ -11,6 +11,7 @@ cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=$(pwd)
 
 apt update
+apt -y install gdebi-core software-properties-common apt-https-transport curl
 
 # add mc repo and repo key
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
