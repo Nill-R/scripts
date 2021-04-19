@@ -15,7 +15,7 @@ apt -y install gdebi-core software-properties-common apt-https-transport curl
 
 # add mc repo and repo key
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
-gdebi --n tataranovich-keyring_2020.06.12_all.deb
+gdebi --n ./tataranovich-keyring_2020.06.12_all.deb
 printf "deb http://www.tataranovich.com/ubuntu $CODENAME main\n" >/etc/apt/sources.list.d/mc.list
 
 # add MariaDB repo
@@ -28,7 +28,7 @@ apt-add-repository -y ppa:nill-rinov/nill-nginx-ppa
 apt -y dist-upgrade
 
 # install nginx and modules
-apt -y nginx-module-brotli nginx-module-cache-purge nginx-module-ct nginx-module-devel-kit nginx-module-fancyindex nginx-module-geoip nginx-module-geoip2 nginx-module-graphite nginx-module-http-auth-pam nginx-module-http-echo nginx-module-http-headers-more nginx-module-http-subs-filter nginx-module-image-filter nginx-module-lenght-hiding-filter nginx-module-lua nginx-module-mail nginx-module-naxsi nginx-module-nchan nginx-module-njs nginx-module-pagespeed nginx-module-perl nginx-module-rds-json nginx-module-rtmp nginx-module-session-binding-proxy nginx-module-stream nginx-module-stream-sts nginx-module-sts nginx-module-testcookie nginx-module-ts nginx-module-upload-progress nginx-module-upstream-fair nginx-module-upstream-order nginx-module-vts nginx-module-xslt nginx-module-http-proxy-connect
+apt -y install nginx-module-brotli nginx-module-cache-purge nginx-module-ct nginx-module-devel-kit nginx-module-fancyindex nginx-module-geoip nginx-module-geoip2 nginx-module-graphite nginx-module-http-auth-pam nginx-module-http-echo nginx-module-http-headers-more nginx-module-http-subs-filter nginx-module-image-filter nginx-module-lenght-hiding-filter nginx-module-lua nginx-module-mail nginx-module-naxsi nginx-module-nchan nginx-module-njs nginx-module-pagespeed nginx-module-perl nginx-module-rds-json nginx-module-rtmp nginx-module-session-binding-proxy nginx-module-stream nginx-module-stream-sts nginx-module-sts nginx-module-testcookie nginx-module-ts nginx-module-upload-progress nginx-module-upstream-fair nginx-module-upstream-order nginx-module-vts nginx-module-xslt nginx-module-http-proxy-connect
 
 # install utilites
 apt -y install git mc wget pydf ncdu vim bash-completion grc ssh-import-id tmux screen molly-guard htop python3-pip zstd
