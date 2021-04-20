@@ -11,7 +11,7 @@ cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=$(pwd)
 
 apt update
-apt -y install gdebi-core software-properties-common apt-https-transport curl
+apt -y install gdebi-core software-properties-common apt-transport-https curl
 
 # add mc repo and repo key
 wget http://www.tataranovich.com/debian/pool/sid/main/t/tataranovich-keyring/tataranovich-keyring_2020.06.12_all.deb
