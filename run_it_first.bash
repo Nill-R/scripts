@@ -5,7 +5,7 @@ apt -y install lsb-release
 
 CODENAME=$(lsb_release -c -s)
 
-printf "deb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-backports main restricted universe multiverse\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security main restricted\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security universe\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security multiverse">/etc/apt/sources.list
+printf "deb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates main restricted\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates universe\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-updates multiverse\ndeb mirror://mirrors.ubuntu.com/mirrors.txt $CODENAME-backports main restricted universe multiverse\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security main restricted\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security universe\ndeb http://security.ubuntu.com/ubuntu $CODENAME-security multiverse\n###\n">/etc/apt/sources.list
 
 cd $(mktemp -d backup.XXXXXXX)
 TEMP_DIR=$(pwd)
