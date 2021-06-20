@@ -11,8 +11,8 @@ if [ $# -eq 0 ]; then
 fi
 while true
 do
-        DATE=$(date +%Y%m%d-%H%M%S)
-        inotifywait -e modify,attrib,close_write,create,delete,delete_self -r $1 -o /tmp/$DATE.inotifywait.log
+        DATE=$(date +%d%m%Y%-%H%M%S)
+        inotifywait -e modify,attrib,close_write,create,delete,delete_self -r $DIR_PATH -o /tmp/$DATE.inotifywait.log
         telegram-send "$(cat /tmp/$DATE.inotifywait.log) was changed at $(hostname) on $DATE"
         rm /tmp/$DATE.inotifywait.log
 done
