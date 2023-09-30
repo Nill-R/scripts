@@ -17,8 +17,8 @@ if [ $# -ne $EXPECTED_ARGS ]; then
 fi
 $MYSQL -e "$SQL"
 
-printf "db name: $1\n"
-printf "db user: $2\n"
-printf "db pass: $PASS\n"
+printf "db name: %s\n" "$1"
+printf "db user: %s\n" "$2"
+printf "db pass: %s\n" "$PASS"
 
 exit 0
