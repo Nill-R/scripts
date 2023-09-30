@@ -32,7 +32,7 @@ for LOG in $LISTLOG; do
         DIR=/tmp
         FLAG=$DIR/$NAME.cnt
 
-        if [ ! -e $F ]; then
+        if [ ! -e "$F" ]; then
                 #                echo "*** File $F does now exist, exiting…" ; exit 1
                 exit 0
         fi

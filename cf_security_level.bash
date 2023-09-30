@@ -11,7 +11,7 @@ ZONE_ID=
 API_KEY=
 
 curl --request PATCH \
-  --url https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/security_level \
+  --url https://api.cloudflare.com/client/v4/zones/"$ZONE_ID"/settings/security_level \
   --header 'Content-Type: application/json' \
   -H "Authorization: Bearer $API_KEY" \
   --data '{
