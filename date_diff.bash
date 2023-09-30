@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Read in the two dates
-read -p "Enter the first date (YYYY-MM-DD): " date1
-read -p "Enter the second date (YYYY-MM-DD): " date2
+read -r -p "Enter the first date (YYYY-MM-DD): " date1
+read -r -p "Enter the second date (YYYY-MM-DD): " date2
 
 # Convert the dates to seconds since the epoch
 date1_seconds=$(date -d "$date1" +%s)

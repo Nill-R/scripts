@@ -15,9 +15,9 @@ if [ $# -ne $EXPECTED_ARGS ]; then
         exit $E_BADARGS
 fi
 
-useradd -s/bin/bash -m $1
+useradd -s/bin/bash -m "$1"
 
 echo "$1:$PASS"|chpasswd
 
-printf "user: $1\n"
-printf "password: $PASS\n"
+printf "user: %s\n" "$1"
+printf "password: %s\n" "$PASS"
