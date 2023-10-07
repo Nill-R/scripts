@@ -7,7 +7,7 @@
 PATH=/sbin:/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/opt/bin:/snap/bin
 
 eerror() {
-        echo $*
+        echo "$*"
         exit 1
 }
 
@@ -26,7 +26,7 @@ fi
 LISTLOG=/var/log/php/www.error.log
 
 for LOG in $LISTLOG; do
-        NAME=$(basename $LOG)
+        NAME=$(basename "$LOG")
         F=$LOG
 
         DIR=/tmp
@@ -55,5 +55,5 @@ for LOG in $LISTLOG; do
                 echo -e  "Log file \"$F\" has new lines ($LAST_N -> $CURR_N).\n $(tail -n $STR $F)" | $TG_SEND --stdin --disable-web-page-preview
         fi
 
-        echo $CURR_N >$FLAG
+        echo "$CURR_N" >"$FLAG"
 done

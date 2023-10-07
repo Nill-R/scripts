@@ -57,7 +57,7 @@ lego --dns "$DNS_PROVIDER" \
         --path="$CONF_PATH/letsencrypt/$DOMAIN" \
         --accept-tos "$ACTION"
 
-done 
+done
 
 cd ~ || exit
 
