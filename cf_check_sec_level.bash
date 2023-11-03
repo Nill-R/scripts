@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Function to print a message with a timestamp
+print_with_timestamp() {
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
 # Check for the presence of curl
 if ! command -v curl &> /dev/null; then
   # Check if apt is available
@@ -31,13 +36,13 @@ response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/s
 if [ -n "$response" ]; then
   security_level=$(echo "$response" | sed -n 's/.*"value":"\([^"]*\)".*/\1/p')
   if [ "$security_level" != "high" ]; then
-    echo "The security level is not set to high."
+     print_with_timestamp "The security level is not set to high."
     exit 0
   else
-    echo "The security level is set correctly to high."
+    print_with_timestamp "The security level is set correctly to high."
     exit 1
   fi
 else
-  echo "Failed to fetch security level information from Cloudflare API."
+  print_with_timestamp  "Failed to fetch security level information from Cloudflare API."
   exit 1
 fi
