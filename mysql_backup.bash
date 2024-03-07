@@ -35,7 +35,9 @@ backup_databases() {
     databases=$(mysql -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql)")
     for db in $databases; do
         echo "Backing up database: $db"
-        "$MYSQLDUMP" --single-transaction --routines --triggers --events "$db" | "$COMP -19 --rm" > "$BACKUP_PATH/$db-$DATE.sql.gz"
+        "$MYSQLDUMP" --single-transaction --routines --triggers --events "$db" > "$BACKUP_PATH/$db-$DATE.sql"
+        "$COMP" -T0 -19 --rm "$BACKUP_PATH/$db-$DATE.sql"
+
     done
 }
 
