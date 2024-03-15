@@ -50,7 +50,6 @@ if [ -d "$CONF_PATH"/letsencrypt/"$DOMAIN" ]; then
 fi
 
 lego --dns "$DNS_PROVIDER" \
-        --dns.resolvers 9.9.9.9 \
         --domains *."$DOMAIN" \
         --domains "$DOMAIN" \
         --email "$EMAIL" \
