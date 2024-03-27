@@ -49,6 +49,8 @@ if [ -d "$CONF_PATH"/letsencrypt/"$DOMAIN" ]; then
         ACTION=renew
 fi
 
+export LEGO_DISABLE_CNAME_SUPPORT=true
+
 lego --dns "$DNS_PROVIDER" \
         --domains *."$DOMAIN" \
         --domains "$DOMAIN" \
