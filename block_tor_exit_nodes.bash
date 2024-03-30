@@ -1,43 +1,66 @@
 #!/usr/bin/env bash
-# Block tor exit nodes with nftables
-cd $(mktemp -d /tmp/script.XXXXXXX) || exit
+# Block Tor exit nodes with nftables
 
-NFT=$(which nft)
-CURL=$(which curl)
+# Функция для проверки наличия необходимых программ
+check_dependencies() {
+    local nft_path="$(which nft)"
+    local curl_path="$(which curl)"
 
-if [ ! -f "$NFT" ]; then
-        printf "ERROR: The nftables not installed.\n"
-        printf "FIX: Please install nftables\n"
-        printf "FIX: apt install nftables\n"
-        rm -rf "$TEMP_DIR"
+    if [ -z "$nft_path" ]; then
+        echo "ERROR: nftables is not installed."
+        echo "FIX: Please install nftables with 'apt install nftables'"
         exit 1
-fi
+    fi
 
-if [ ! -f "$CURL" ]; then
-        printf "ERROR: The curl not installed.\n"
-        printf "FIX: Please install curl\n"
-        printf "FIX: apt install curl\n"
-        rm -rf "$TEMP_DIR"
+    if [ -z "$curl_path" ]; then
+        echo "ERROR: curl is not installed."
+        echo "FIX: Please install curl with 'apt install curl'"
         exit 1
-fi
+    fi
+}
 
-# add table filter
-nft add table ip filter
+# Функция для настройки nftables
+setup_nftables() {
+    nft add table ip filter
+    nft add chain ip filter input '{ type filter hook input priority 0; }'
+    nft add set ip filter torexitnodes '{ type ipv4_addr; flags dynamic, timeout; timeout 5m; }'
+}
 
-# Add input chain to filter table
-nft add chain ip filter input { type filter hook input priority 0 \; }
+# Функция для добавления Tor выходных узлов в набор
+add_tor_exit_nodes() {
+    curl -sSL "https://check.torproject.org/cgi-bin/TorBulkExitList.py?exit" | sed '/^#/d' | while read -r ip; do
+        nft add element ip filter torexitnodes "{ $ip }"
+    done
+}
 
-# Add named set
-nft add set ip filter torexitnodes { type ipv4_addr \; flags dynamic, timeout \; timeout 5m \; }
+# Функция для блокировки трафика через Tor выходные узлы
+block_tor_exit_nodes() {
+    nft add rule ip filter input ip saddr @torexitnodes drop
+}
 
-# Download list of exit nodes and add to named set
-curl -sSL "https://check.torproject.org/cgi-bin/TorBulkExitList.py?exit" | sed '/^#/d' | while read IP; do
-  nft add element ip filter torexitnodes { $IP }
-done
+# Функция для очистки
+cleanup() {
+    local temp_dir
+    temp_dir=$(mktemp -d /tmp/script.XXXXXXX)
+    cd "$temp_dir" || exit 1
+    # Здесь можно добавить код для удаления правил и набора nftables
+    cd ~ || exit 1
+    rm -rf "$temp_dir"
+}
 
-# Block ip addresses in the named set
-nft add rule ip filter input ip saddr @torexitnodes drop
+# Основная последовательность выполнения
+main() {
+    local temp_dir
+    temp_dir=$(mktemp -d /tmp/script.XXXXXXX)
+    cd "$temp_dir" || exit 1
 
-cd ~ || exit
-rm -rf "$TEMP_DIR"
-exit 0
+    check_dependencies
+    setup_nftables
+    add_tor_exit_nodes
+    block_tor_exit_nodes
+
+    cd ~ || exit 1
+    rm -rf "$temp_dir"
+}
+
+main "$@"

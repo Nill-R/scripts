@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 
+# Function to display the usage of the script
+#
+# This function prints a message to the console with the usage instructions
+# for the script. It takes no arguments and does not return any values.
+
 display_usage() {
-        echo -e  "Usage: $(basename %s)"
+    # Print the usage instructions
+    echo -e "Usage: $(basename $0)" # Use $0 to get the script name
 }
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/opt/bin:/snap/bin:~/bin
 
-cd $(mktemp -d /tmp/script.XXXXXXX) || exit
+cd "$(mktemp -d /tmp/script.XXXXXXX)" || exit
 
 TEMP_DIR=$(pwd)
 
 ACTION=$1
 LEGO=$(which lego)
 
-if [ $(id -u) = 0 ]; then
+if [ "$(id -u)" = 0 ]; then
         CONF_PATH="/etc"
 else
         CONF_PATH="$HOME/.local/etc"
