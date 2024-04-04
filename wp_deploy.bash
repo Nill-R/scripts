@@ -38,19 +38,19 @@ while IFS= read -r domain || [[ -n "$domain" ]]; do
     
     # Change to the website directory
     cd "$site_dir" || exit
-    
+
     # Download WordPress
     wp core download --path="$site_dir"
-    
+
     # Create WordPress configuration file
     wp config create --dbname="$db_name" --dbuser="$db_user" --dbpass="$db_password" --prompt=0
-    
+
     # Create the database tables
     wp db create
-    
+
     # Install WordPress
     wp core install --url="$domain" --title="$domain" --admin_user=admin --admin_password=admin_password --admin_email=support@"$domain"
-    
+
     # Output message indicating completion
     echo "WordPress deployed for $domain"
 done < domains.txt
