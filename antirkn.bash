@@ -36,8 +36,6 @@ nft add element inet filter subnets { $subnets_string }
 nft add rule inet filter output ip saddr @subnets counter accept
 ip -4 route flush table 100
 ip -4 route add table 100 unreachable default metric 4278198272
-nft add rule inet filter output ip saddr @subnets counter accept
-nft add rule inet filter output ip saddr @subnets counter accept
 
 # Применяем изменения
 nft --debug=netlink list ruleset
