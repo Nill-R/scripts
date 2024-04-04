@@ -30,7 +30,7 @@ while IFS= read -r subnet; do
 done < "$SUBNET_FILE"
 
 # Добавляем все подсети в набор в nftables
-nft add element inet filter subnets { $subnets_string }
+nft add element inet filter subnets { "$subnets_string" }
 
 # Добавляем правила маршрутизации для подсетей через интерфейс wg0
 nft add rule inet filter output ip saddr @subnets counter accept
