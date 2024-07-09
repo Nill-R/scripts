@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Путь к файлу с функцией отправки сообщений в Telegram
-TELEGRAM_FUNCTIONS="/usr/local/bintelegram_functions.sh"
+TELEGRAM_FUNCTIONS="/usr/local/bin/telegram_functions.bash"
 
 # Проверка наличия файла с функцией отправки сообщений
 if [ ! -f "$TELEGRAM_FUNCTIONS" ]; then
