@@ -73,9 +73,21 @@ process_domain() {
     export LEGO_DISABLE_CNAME_SUPPORT=true
 
     local ca_args=""
-    if [ "$ca" = "ZeroSSL" ]; then
-        ca_args="--server https://acme.zerossl.com/v2/DV90 --eab --kid $ZEROSSL_EAB_KID --hmac $ZEROSSL_EAB_HMAC_KEY"
-    fi
+    case "$ca" in
+        "ZeroSSL")
+            ca_args="--server https://acme.zerossl.com/v2/DV90 --eab --kid $ZEROSSL_EAB_KID --hmac $ZEROSSL_EAB_HMAC_KEY"
+            ;;
+        "Buypass")
+            ca_args="--server https://api.buypass.com/acme/directory"
+            ;;
+        "LetsEncrypt")
+            # Default ACME server, no additional arguments needed
+            ;;
+        *)
+            log "ERROR: Unknown CA $ca"
+            return 1
+            ;;
+    esac
 
     if ! $LEGO $ca_args --dns "$DNS_PROVIDER" \
             --domains "*.$domain" \
@@ -181,6 +193,9 @@ for config in "$CONF_PATH"/lego/*; do
     else
         log "ZeroSSL credentials file not found. Skipping ZeroSSL certificate acquisition."
     fi
+
+    # Process for Buypass Go SSL
+    process_domain "$DOMAIN" "Buypass" "$CONF_PATH/buypass/$DOMAIN"
 done
 
 # Optionally restart Nginx
