@@ -44,6 +44,53 @@ safe_source() {
     fi
 }
 
+# Function to check if directory is empty
+is_directory_empty() {
+    [ -z "$(ls -A "$1")" ]
+}
+
+# Function to process domain for a specific CA
+process_domain() {
+    local domain="$1"
+    local ca="$2"
+    local cert_path="$3"
+    local action="run"
+
+    if [ -d "$cert_path" ]; then
+        if is_directory_empty "$cert_path"; then
+            log "Empty certificate directory found for $domain. Attempting to obtain new certificate."
+            action="run"
+        else
+            action="renew"
+            # Backup existing certificates
+            cp -r "$cert_path" "${cert_path}.bak"
+        fi
+    else
+        mkdir -p "$cert_path"
+    fi
+
+    log "Processing domain: $domain for $ca"
+    export LEGO_DISABLE_CNAME_SUPPORT=true
+
+    local ca_args=""
+    if [ "$ca" = "ZeroSSL" ]; then
+        ca_args="--server https://acme.zerossl.com/v2/DV90 --eab --kid $ZEROSSL_EAB_KID --hmac $ZEROSSL_EAB_HMAC_KEY"
+    fi
+
+    if ! $LEGO $ca_args --dns "$DNS_PROVIDER" \
+            --domains "*.$domain" \
+            --domains "$domain" \
+            --email "$EMAIL" \
+            --path="$cert_path" \
+            --accept-tos "$action"; then
+        log "ERROR: Failed to $action certificate for $domain with $ca"
+        return 1
+    fi
+
+    log "Successfully processed $domain with $ca"
+    return 0
+}
+
 # Parse command line arguments
 CONF_PATH=""
 while [[ $# -gt 0 ]]; do
@@ -110,27 +157,30 @@ for config in "$CONF_PATH"/lego/*; do
     check_var "DNS_PROVIDER"
     check_var "EMAIL"
 
-    ACTION="run"
-    if [ -d "$CONF_PATH/letsencrypt/$DOMAIN" ]; then
-        ACTION="renew"
-        # Backup existing certificates
-        cp -r "$CONF_PATH/letsencrypt/$DOMAIN" "$CONF_PATH/letsencrypt/$DOMAIN.bak"
+    # Process for LetsEncrypt
+    process_domain "$DOMAIN" "LetsEncrypt" "$CONF_PATH/letsencrypt/$DOMAIN"
+
+    # Check if ZeroSSL credentials exist and process for ZeroSSL
+    if [ -f "/etc/zerossl/credentials" ]; then
+        # Read ZeroSSL credentials
+        ZEROSSL_API_KEY=$(sed -n '1p' /etc/zerossl/credentials)
+        ZEROSSL_EAB_KID=$(sed -n '2p' /etc/zerossl/credentials)
+        ZEROSSL_EAB_HMAC_KEY=$(sed -n '3p' /etc/zerossl/credentials)
+
+        # Check if all ZeroSSL credentials are present
+        if [ -z "$ZEROSSL_API_KEY" ] || [ -z "$ZEROSSL_EAB_KID" ] || [ -z "$ZEROSSL_EAB_HMAC_KEY" ]; then
+            log "ERROR: ZeroSSL credentials file is incomplete. Please ensure all three lines are present."
+        else
+            # Export ZeroSSL credentials
+            export ZEROSSL_API_KEY
+            export ZEROSSL_EAB_KID
+            export ZEROSSL_EAB_HMAC_KEY
+
+            process_domain "$DOMAIN" "ZeroSSL" "$CONF_PATH/zerossl/$DOMAIN"
+        fi
+    else
+        log "ZeroSSL credentials file not found. Skipping ZeroSSL certificate acquisition."
     fi
-
-    log "Processing domain: $DOMAIN"
-    export LEGO_DISABLE_CNAME_SUPPORT=true
-
-    if ! $LEGO --dns "$DNS_PROVIDER" \
-            --domains "*.$DOMAIN" \
-            --domains "$DOMAIN" \
-            --email "$EMAIL" \
-            --path="$CONF_PATH/letsencrypt/$DOMAIN" \
-            --accept-tos "$ACTION"; then
-        log "ERROR: Failed to $ACTION certificate for $DOMAIN"
-        continue
-    fi
-
-    log "Successfully processed $DOMAIN"
 done
 
 # Optionally restart Nginx
