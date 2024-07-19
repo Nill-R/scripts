@@ -49,6 +49,13 @@ is_directory_empty() {
     [ -z "$(ls -A "$1")" ]
 }
 
+# Function to get country code
+get_country_code() {
+    local country_code
+    country_code=$(curl -s ip.lindon.cloud/country-iso)
+    echo "$country_code"
+}
+
 # Function to process domain for a specific CA
 process_domain() {
     local domain="$1"
@@ -73,15 +80,19 @@ process_domain() {
     export LEGO_DISABLE_CNAME_SUPPORT=true
 
     local ca_args=""
+    local domains_args=""
     case "$ca" in
         "ZeroSSL")
             ca_args="--server https://acme.zerossl.com/v2/DV90 --eab --kid $ZEROSSL_EAB_KID --hmac $ZEROSSL_EAB_HMAC_KEY"
+            domains_args="--domains \"*.$domain\" --domains \"$domain\""
             ;;
         "Buypass")
             ca_args="--server https://api.buypass.com/acme/directory"
+            domains_args="--domains \"$domain\" --domains \"www.$domain\""
             ;;
         "LetsEncrypt")
             # Default ACME server, no additional arguments needed
+            domains_args="--domains \"*.$domain\" --domains \"$domain\""
             ;;
         *)
             log "ERROR: Unknown CA $ca"
@@ -89,9 +100,8 @@ process_domain() {
             ;;
     esac
 
-    if ! $LEGO $ca_args --dns "$DNS_PROVIDER" \
-            --domains "*.$domain" \
-            --domains "$domain" \
+    if ! eval $LEGO $ca_args --dns "$DNS_PROVIDER" \
+            $domains_args \
             --email "$EMAIL" \
             --path="$cert_path" \
             --accept-tos "$action"; then
@@ -159,6 +169,10 @@ TEMP_DIR=$(mktemp -d /tmp/lego_cert.XXXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 cd "$TEMP_DIR" || exit
 
+# Get country code
+COUNTRY_CODE=$(get_country_code)
+log "Current country code: $COUNTRY_CODE"
+
 # Process each domain configuration
 for config in "$CONF_PATH"/lego/*; do
     # Use safe_source function instead of direct source
@@ -194,8 +208,12 @@ for config in "$CONF_PATH"/lego/*; do
         log "ZeroSSL credentials file not found. Skipping ZeroSSL certificate acquisition."
     fi
 
-    # Process for Buypass Go SSL
-    process_domain "$DOMAIN" "Buypass" "$CONF_PATH/buypass/$DOMAIN"
+    # Process for Buypass Go SSL if not in Russia or Belarus
+    if [[ "$COUNTRY_CODE" != "RU" && "$COUNTRY_CODE" != "BY" ]]; then
+        process_domain "$DOMAIN" "Buypass" "$CONF_PATH/buypass/$DOMAIN"
+    else
+        log "Skipping Buypass certificate acquisition due to geographical restrictions."
+    fi
 done
 
 # Optionally restart Nginx
