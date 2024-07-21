@@ -12,14 +12,16 @@ display_usage() {
 
 # Function for logging
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    local message="$1"
+    local log_file="/var/log/lego/lego_cert.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $message" | tee -a "$log_file"
 }
 
 # Function to check if a variable is set
 check_var() {
     if [ -z "${!1}" ]; then
         log "ERROR: $1 is not set in the configuration file"
-        exit 1
+        return 1
     fi
 }
 
@@ -40,7 +42,7 @@ safe_source() {
         fi
     else
         log "ERROR: Configuration file $file not found"
-        exit 1
+        return 1
     fi
 }
 
@@ -143,6 +145,9 @@ if [ -z "$CONF_PATH" ]; then
     fi
 fi
 
+# Ensure log directory exists
+mkdir -p /var/log/lego
+
 # Check for lego installation
 LEGO=$(which lego)
 if [ ! -f "$LEGO" ]; then
@@ -176,15 +181,21 @@ log "Current country code: $COUNTRY_CODE"
 # Process each domain configuration
 for config in "$CONF_PATH"/lego/*; do
     # Use safe_source function instead of direct source
-    safe_source "$config"
+    if ! safe_source "$config"; then
+        log "Skipping configuration file $config due to error"
+        continue
+    fi
 
     # Check required variables
-    check_var "DOMAIN"
-    check_var "DNS_PROVIDER"
-    check_var "EMAIL"
+    if ! check_var "DOMAIN" || ! check_var "DNS_PROVIDER" || ! check_var "EMAIL"; then
+        log "Skipping domain $DOMAIN due to missing required variables"
+        continue
+    fi
 
     # Process for LetsEncrypt
-    process_domain "$DOMAIN" "LetsEncrypt" "$CONF_PATH/letsencrypt/$DOMAIN"
+    if ! process_domain "$DOMAIN" "LetsEncrypt" "$CONF_PATH/letsencrypt/$DOMAIN"; then
+        log "Failed to process $DOMAIN for LetsEncrypt, continuing with next CA"
+    fi
 
     # Check if ZeroSSL credentials exist and process for ZeroSSL
     if [ -f "/etc/zerossl/credentials" ]; then
@@ -202,7 +213,9 @@ for config in "$CONF_PATH"/lego/*; do
             export ZEROSSL_EAB_KID
             export ZEROSSL_EAB_HMAC_KEY
 
-            process_domain "$DOMAIN" "ZeroSSL" "$CONF_PATH/zerossl/$DOMAIN"
+            if ! process_domain "$DOMAIN" "ZeroSSL" "$CONF_PATH/zerossl/$DOMAIN"; then
+                log "Failed to process $DOMAIN for ZeroSSL, continuing with next CA"
+            fi
         fi
     else
         log "ZeroSSL credentials file not found. Skipping ZeroSSL certificate acquisition."
@@ -210,7 +223,9 @@ for config in "$CONF_PATH"/lego/*; do
 
     # Process for Buypass Go SSL if not in Russia or Belarus
     if [[ "$COUNTRY_CODE" != "RU" && "$COUNTRY_CODE" != "BY" ]]; then
-        process_domain "$DOMAIN" "Buypass" "$CONF_PATH/buypass/$DOMAIN"
+        if ! process_domain "$DOMAIN" "Buypass" "$CONF_PATH/buypass/$DOMAIN"; then
+            log "Failed to process $DOMAIN for Buypass, continuing with next domain"
+        fi
     else
         log "Skipping Buypass certificate acquisition due to geographical restrictions."
     fi
