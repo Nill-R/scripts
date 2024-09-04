@@ -40,18 +40,18 @@ def download_if_needed(rir):
     ensure_cache_dir()
     cache_file = CACHE_DIR / RIR_DATABASES[rir]['file']
     url = RIR_DATABASES[rir]['url']
-    
+
     if cache_file.exists():
         print(f"Checking if local file {cache_file} is up to date...", file=sys.stderr)
         try:
             head = requests.head(url)
             remote_size = int(head.headers.get('Content-Length', 0))
             remote_modified = head.headers.get('Last-Modified')
-            
+
             if remote_modified:
                 remote_modified = datetime.strptime(remote_modified, "%a, %d %b %Y %H:%M:%S GMT")
                 local_modified = datetime.fromtimestamp(cache_file.stat().st_mtime)
-                
+
                 if remote_size == cache_file.stat().st_size and remote_modified <= local_modified:
                     print(f"Local file for {rir} is up to date. Using cached version.", file=sys.stderr)
                     return
@@ -59,7 +59,7 @@ def download_if_needed(rir):
             print(f"Error checking remote file: {e}", file=sys.stderr)
             print("Using cached version.", file=sys.stderr)
             return
-    
+
     print(f"Downloading fresh copy from {url}...", file=sys.stderr)
     try:
         response = requests.get(url, stream=True)
@@ -89,7 +89,7 @@ def process_file(rir, search_term):
                     else:
                         start, end = range_str.split()
                     current_range = (start.strip(), end.strip())
-            
+
             # Исправленный отступ для этого блока
             elif ((rir == 'ripe' and line.startswith('mnt-by:')) or
                   (rir == 'arin' and line.startswith(('OrgName:', 'owner:'))) or
@@ -101,21 +101,21 @@ def process_file(rir, search_term):
                 if search_term_lower in org.lower():
                     matching_ranges.append((current_range, org))
                 current_range = None
-            
+
             if len(matching_ranges) >= 1000:
                 for range_info in matching_ranges:
                     yield range_info
                 matching_ranges = []
-    
+
     for range_info in matching_ranges:
         yield range_info
 
 def search_rir(rir, search_term):
     try:
         download_if_needed(rir)
-        
+
         print(f"Parsing {rir.upper()} file and searching for '{search_term}'...", file=sys.stderr)
-        
+
         count = 0
         for (start, end), org in process_file(rir, search_term):
             count += 1
@@ -128,7 +128,7 @@ def search_rir(rir, search_term):
                     print(f"{rir.upper()}: {cidr}")
             except ValueError as e:
                 print(f"Error processing range {start} - {end} in {rir.upper()}: {e}", file=sys.stderr)
-        
+
         print(f"Found {count} matching ranges in {rir.upper()} database.", file=sys.stderr)
         return count
     except Exception as e:
