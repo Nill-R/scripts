@@ -1,71 +1,73 @@
+
 #!/usr/bin/env bash
 
 # ##############################################################################
-# Description:  Uses IPSET and IPTABLES to block full countries from accessing the server for all ports and protocols
-# Syntax:       countries_block.bash countrycode [countrycode] ......
+# Description:  Uses nftables to block full countries from accessing the server for all ports and protocols
+# Syntax:       countries_block_nft.bash countrycode [countrycode] ......
 #               Use the standard locale country codes to get the proper IP list. eg.
 #               countries_block.bash cn ru ro
 #               Will create tables that block all requests from China, Russia and Romania
-# Note:         To get a sorted list of the inserted IPSet IPs for example China list(cn) run the command:
-#               ipset list cn | sort -n -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4
-# #############################################################################
+# Note:         To get a sorted list of IP sets for a specific country, you can list the set like:
+#               nft list set inet filter cn
+# ##############################################################################
 # Defining some defaults
-iptables="/sbin/iptables"
-tempdir="/tmp"
+nft="/usr/sbin/nft"
 sourceURL="http://www.ipdeny.com/ipblocks/data/countries/"
-#
-# Verifying that the program 'ipset' is installed
-if ! (dpkg -l | grep '^ii  ipset' &>/dev/null); then
-	echo "ERROR: 'ipset' package is not installed and required."
-	echo "Please install it with the command 'apt install ipset' and start this script again"
-	exit 1
-fi
-[ -e /sbin/ipset ] && ipset="/sbin/ipset" || ipset="/usr/sbin/ipset"
-#
-# Verifying the number of arguments
-if [ $# -lt 1 ]; then
-	echo "ERROR: wrong number of arguments. Must be at least one."
-	echo "countries_block.bash countrycode [countrycode] ......"
-	echo "Use the standard locale country codes to get the proper IP list. eg."
-	echo "countries_block.bash cn ru ro"
-	exit 2
-fi
-#
-# Now load the rules for blocking each given countries and insert them into IPSet tables
-for country; do
-	# Read each line of the list and create the IPSet rules
-	# Making sure only the valid country codes and lists are loaded
-	if wget -q -P $tempdir ${sourceURL}"${country}".zone; then
-		# Destroy the IPSet list if it exists
-		$ipset flush "$country" &>/dev/null
-		# Create the IPSet list name
-		echo "Creating and filling the IPSet country list: $country"
-		$ipset create "$country" hash:net &>/dev/null
-		(for IP in $(cat $tempdir/${country}.zone); do
-			# Create the IPSet rule from each IP in the list
-			echo -n "$ipset add $country $IP --exist - "
-			$ipset add $country $IP -exist && echo "OK" || echo "FAILED"
-		done) >$tempdir/IPSet-rules.${country}.txt
-		# Destroy the already existing rule if it exists and insert the new one
-		$iptables -D INPUT -p tcp -m set --match-set $country src -j DROP &>/dev/null
-		$iptables -I INPUT -p tcp -m set --match-set $country src -j DROP
-		# Delete the temporary downloaded counties IP lists
-		rm $tempdir/${country}.zone
-	else
-		echo "Argument $country is invalid or not available as country IP list. Skipping"
-	fi
-done
-# Display the result of the iptables rules in INPUT chain
-echo "======================================"
-echo "IPSet lists registered in iptables:"
-$iptables -L INPUT -n -v | grep 'match-set'
-# Dispaly the number of IP ranges entered in the IPset lists
-echo "--------------------------------------"
-for country; do
-	echo "Number of ip ranges entered in IPset list '$country' : $($ipset list "$country" | wc -l)"
-done
-echo "======================================"
 
-exit 0
-#
-#eof
+# Verifying that the program 'nft' is installed
+if ! command -v $nft &>/dev/null; then
+    echo "nftables is not installed. Exiting."
+    exit 1
+fi
+
+# Creating a temporary directory
+tempdir=$(mktemp -d)
+
+# Ensure the temporary directory is created
+if [ ! -d "$tempdir" ]; then
+    echo "Failed to create temporary directory. Exiting."
+    exit 1
+fi
+
+# Creating the nftables table and chain if they don't exist
+$nft list table inet filter &>/dev/null
+if [ $? -ne 0 ]; then
+    $nft add table inet filter
+    $nft add chain inet filter input { type filter hook input priority 0 \; }
+fi
+
+# Download and apply country IP sets
+for countrycode in "$@"; do
+    echo "Processing country code: $countrycode"
+    iplist="${tempdir}/${countrycode}.zone"
+
+    # Fetching the IP list
+    wget -q -O $iplist "${sourceURL}${countrycode}.zone"
+    if [ $? -ne 0 ]; then
+        echo "Failed to download IP list for ${countrycode}. Skipping."
+        continue
+    fi
+
+    # Create or flush the nftables set for the country
+    $nft list set inet filter ${countrycode} &>/dev/null
+    if [ $? -ne 0 ]; then
+        $nft add set inet filter ${countrycode} { type ipv4_addr\; flags interval\; }
+    else
+        $nft flush set inet filter ${countrycode}
+    fi
+
+    # Adding IPs to the set
+    while read -r ip; do
+        $nft add element inet filter ${countrycode} { $ip }
+    done < $iplist
+
+    # Adding drop rule for the country set
+    $nft list ruleset | grep -q "ip saddr @${countrycode} drop"
+    if [ $? -ne 0 ]; then
+        $nft add rule inet filter input ip saddr @${countrycode} drop
+    fi
+done
+
+# Clean up the temporary directory
+rm -rf "$tempdir"
+echo "Done."
