@@ -35,12 +35,12 @@ fi
 for country; do
 	# Read each line of the list and create the IPSet rules
 	# Making sure only the valid country codes and lists are loaded
-	if wget -q -P $tempdir ${sourceURL}${country}.zone; then
+	if wget -q -P $tempdir ${sourceURL}"${country}".zone; then
 		# Destroy the IPSet list if it exists
-		$ipset flush $country &>/dev/null
+		$ipset flush "$country" &>/dev/null
 		# Create the IPSet list name
 		echo "Creating and filling the IPSet country list: $country"
-		$ipset create $country hash:net &>/dev/null
+		$ipset create "$country" hash:net &>/dev/null
 		(for IP in $(cat $tempdir/${country}.zone); do
 			# Create the IPSet rule from each IP in the list
 			echo -n "$ipset add $country $IP --exist - "
@@ -62,7 +62,7 @@ $iptables -L INPUT -n -v | grep 'match-set'
 # Dispaly the number of IP ranges entered in the IPset lists
 echo "--------------------------------------"
 for country; do
-	echo "Number of ip ranges entered in IPset list '$country' : $($ipset list $country | wc -l)"
+	echo "Number of ip ranges entered in IPset list '$country' : $($ipset list "$country" | wc -l)"
 done
 echo "======================================"
 
