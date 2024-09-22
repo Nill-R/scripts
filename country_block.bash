@@ -50,7 +50,7 @@ for countrycode in "$@"; do
     # Create or flush the nftables set for the country
     $nft list set inet filter ${countrycode} &>/dev/null
     if [ $? -ne 0 ]; then
-        $nft add set inet filter ${countrycode} { type ipv4_addr\; flags interval\; }
+        $nft add set inet filter ${countrycode} { type ipv4_addr\; flags interval\; auto-merge\;}
     else
         $nft flush set inet filter ${countrycode}
     fi
