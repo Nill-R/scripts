@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Директория с конфигами Nginx
-CONFIG_DIR="/path/to/nginx/configs"
+CONFIG_DIR="/etc/nginx/sites=available"
 
 # Проходим рекурсивно по директории
 find "$CONFIG_DIR" -type f -name "*.conf" | while read -r file; do
