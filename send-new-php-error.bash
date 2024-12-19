@@ -1,59 +1,63 @@
 #!/usr/bin/env bash
 
-# version 1.2.1
+# version 2.0.1
 # © Sergey Voronov 2010
-# © Nill Ringil 2010-2022
+# © Nill Ringil 2010-2024
+# © LLM Claude 3.5 Sonnet 2024
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/opt/bin:/snap/bin
 
-eerror() {
-        echo "$*"
-        exit 1
+send_telegram_message() {
+    [ -z "$1" ] && return 1
+    CONFIG_FILE="/etc/telegram-notify.conf"
+    [ ! -f "$CONFIG_FILE" ] && return 1
+    source "$CONFIG_FILE"
+    [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ] && return 1
+    URL="https://api.telegram.org/bot$BOT_TOKEN/sendMessage"
+    curl -s -X POST "$URL" -d chat_id="$CHAT_ID" -d text="$1" -d parse_mode="HTML" > /dev/null
 }
 
-TG_SEND=$(which telegram-send)
+eerror() {
+    echo "$*"
+    exit 1
+}
 
-if [ ! -f "$TG_SEND" ]; then
-        printf "ERROR: The telegram-send not installed.\n"
-        printf "FIX: Please install telegram-send using pip(pip install telegram-send)\n"
-        exit 1
-fi
+[ ! -d "/etc/php" ] && eerror "PHP installation not found"
 
-# do_loadconf
+STATE_DIR="/var/tmp/php-fpm-errors"
+mkdir -p "$STATE_DIR"
+chmod 755 "$STATE_DIR"
 
-#LISTLOG=$(grep 'php_admin_value\[error_log\]' /etc/php/7.2/fpm/pool.d/* | grep -v ";" | grep -v dev| awk '{print $3}')
-
-LISTLOG=/var/log/php/www.error.log
-
-for LOG in $LISTLOG; do
-        NAME=$(basename "$LOG")
-        F=$LOG
-
-        DIR=/tmp
-        FLAG=$DIR/$NAME.cnt
-
-        if [ ! -e "$F" ]; then
-                #                echo "*** File $F does now exist, exiting…" ; exit 1
-                exit 0
-        fi
-
-        if [ ! -e "$FLAG" ]; then
-                touch "$FLAG"
-        fi
-        if [ ! -e "$FLAG" ]; then
-                touch "$FLAG"
-        fi
-
-        CURR_N=$(wc -l "$F" | awk '{ print $1 }')
-        LAST_N=$(cat "$FLAG")
-#             echo "debug: CURR_N=$CURR_N LAST_N=$LAST_N FLAG=$FLAG F=$F NAME=$NAME"
-        test -z "$LAST_N" && LAST_N=0
-
+find /etc/php -type f -path "*/fpm/pool.d/*" -exec grep -l "php_admin_value\[error_log\]" {} \; | while read -r pool_file; do
+    error_log=$(grep "php_admin_value\[error_log\]" "$pool_file" | grep -v ";" | awk '{print $3}')
+    [ -z "$error_log" ] && continue
+    
+    for log in $error_log; do
+        NAME=$(basename "$log")
+        FLAG="$STATE_DIR/${NAME}.cnt"
+        
+        [ ! -e "$log" ] && continue
+        [ ! -e "$FLAG" ] && touch "$FLAG" && chmod 644 "$FLAG"
+        
+        CURR_N=$(wc -l "$log" | awk '{ print $1 }')
+        LAST_N=$(cat "$FLAG" 2>/dev/null || echo "0")
+        
         if [ "$CURR_N" -gt "$LAST_N" ]; then
+            PHP_VERSION=$(dirname "$pool_file" | grep -oP '/php/\K[0-9]+\.[0-9]+')
+            POOL_NAME=$(basename "$pool_file" .conf)
+            STR=$((CURR_N - LAST_N))
+            
+            MESSAGE="<b>PHP-FPM Error Alert</b>
+Version: PHP ${PHP_VERSION}
+Pool: ${POOL_NAME}
+Log: ${log}
+New lines: ${LAST_N} → ${CURR_N}
 
-                let STR=$CURR_N-$LAST_N
-                echo -e  "Log file \"$F\" has new lines ($LAST_N -> $CURR_N).\n $(tail -n $STR $F)" | $TG_SEND --stdin --disable-web-page-preview
+<pre>$(tail -n $STR "$log")</pre>"
+            
+            send_telegram_message "$MESSAGE"
         fi
-
-        echo "$CURR_N" >"$FLAG"
+        
+        echo "$CURR_N" > "$FLAG"
+    done
 done
