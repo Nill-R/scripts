@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# version 2.0.1
+# version 2.0.2
 # © Sergey Voronov 2010
-# © Nill Ringil 2010-2024
+# © Nill Ringil 2010-2022
 # © LLM Claude 3.5 Sonnet 2024
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/opt/bin:/snap/bin
@@ -37,10 +37,17 @@ find /etc/php -type f -path "*/fpm/pool.d/*" -exec grep -l "php_admin_value\[err
         FLAG="$STATE_DIR/${NAME}.cnt"
         
         [ ! -e "$log" ] && continue
-        [ ! -e "$FLAG" ] && touch "$FLAG" && chmod 644 "$FLAG"
         
         CURR_N=$(wc -l "$log" | awk '{ print $1 }')
-        LAST_N=$(cat "$FLAG" 2>/dev/null || echo "0")
+        if [ ! -e "$FLAG" ]; then
+            echo "$CURR_N" > "$FLAG"
+            chmod 644 "$FLAG"
+            continue
+        fi
+        
+        LAST_N=$(cat "$FLAG")
+        # Убедимся что LAST_N содержит число
+        [[ ! "$LAST_N" =~ ^[0-9]+$ ]] && LAST_N=0
         
         if [ "$CURR_N" -gt "$LAST_N" ]; then
             PHP_VERSION=$(dirname "$pool_file" | grep -oP '/php/\K[0-9]+\.[0-9]+')
@@ -61,3 +68,5 @@ New lines: ${LAST_N} → ${CURR_N}
         echo "$CURR_N" > "$FLAG"
     done
 done
+
+exit 0
