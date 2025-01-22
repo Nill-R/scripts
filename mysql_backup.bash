@@ -44,7 +44,7 @@ backup_databases() {
 # Purge old backups
 purge_old_backups() {
     echo "Purging backups older than 8 days..."
-    find "$BACKUP_PATH" -name '*.sql.gz' -type f -mtime +8 -exec rm -vf {} \;
+    find "$BACKUP_PATH" -name '*.sql.*' -type f -mtime +8 -exec rm -vf {} \;
 }
 
 # Main function
