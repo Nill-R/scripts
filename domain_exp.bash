@@ -28,6 +28,7 @@ while IFS= read -r domain; do
         else
             echo "[$(date)] Domain $domain is OK" >> "$LOG_FILE"
         fi
+        rm -f /tmp/$domain.exp.check
     fi
 done < "$DOMAINS_FILE"
 
