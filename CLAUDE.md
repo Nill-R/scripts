@@ -8,7 +8,7 @@
 ## Coding Style Guidelines
 
 ### Bash Scripts
-- Use `#!/bin/bash` or `#!/usr/bin/env bash` shebang
+- Use `#!/usr/bin/env bash` shebang
 - Define PATH at the beginning of scripts
 - Use functions for reusable code
 - Include error handling with meaningful messages
