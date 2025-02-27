@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Script create with Claude 3.7 Sonnet assistant(https://claude.ai) using self-hosted LibreChat
+# Script created with Claude 3.7 Sonnet assistant(https://claude.ai) using self-hosted LibreChat
 
 set -e
 
@@ -79,46 +79,88 @@ BACKUP_COUNT=$(echo "$RECENT_BACKUPS" | wc -l)
 
 echo "Найдено $BACKUP_COUNT последних бэкапов:"
 
-# Выводим список бэкапов с номерами
-i=1
-while IFS= read -r backup; do
-    filename=$(basename "$backup")
-    date_part=$(echo "$filename" | grep -oP "${DB_NAME}-\K[0-9]+" | head -1)
+# Проверяем наличие fzf
+if command -v fzf >/dev/null 2>&1; then
+    echo "Используем fzf для выбора бэкапа..."
     
-    # Форматируем дату для удобочитаемости
-    formatted_date=""
-    if [ ${#date_part} -eq 12 ]; then
-        year=${date_part:0:4}
-        month=${date_part:4:2}
-        day=${date_part:6:2}
-        hour=${date_part:8:2}
-        minute=${date_part:10:2}
-        formatted_date="${year}-${month}-${day} ${hour}:${minute}"
-    else
-        formatted_date=$date_part
+    # Создаем массив с путями к бэкапам
+    mapfile -t BACKUP_PATHS < <(echo "$RECENT_BACKUPS")
+    
+    # Создаем массив с именами файлов для отображения
+    DISPLAY_NAMES=()
+    for backup in "${BACKUP_PATHS[@]}"; do
+        filename=$(basename "$backup")
+        # Извлекаем дату из имени файла
+        date_part=$(echo "$filename" | grep -oP "${DB_NAME}-\K[0-9]+" | head -1)
+        
+        # Форматируем дату, если она имеет ожидаемую длину
+        if [ ${#date_part} -eq 12 ]; then
+            year=${date_part:0:4}
+            month=${date_part:4:2}
+            day=${date_part:6:2}
+            hour=${date_part:8:2}
+            minute=${date_part:10:2}
+            DISPLAY_NAMES+=("$filename (дата: ${year}-${month}-${day} ${hour}:${minute})")
+        else
+            DISPLAY_NAMES+=("$filename")
+        fi
+    done
+    
+    # Используем fzf для выбора
+    selected_idx=$(printf "%s\n" "${DISPLAY_NAMES[@]}" | fzf --height=40% --layout=reverse --border | grep -n "^" | cut -d ":" -f1)
+    
+    # Проверяем, был ли сделан выбор
+    if [ -z "$selected_idx" ]; then
+        echo "Выбор не сделан, операция отменена"
+        exit 0
     fi
     
-    echo "$i) $filename (дата: $formatted_date)"
-    i=$((i+1))
-done <<< "$RECENT_BACKUPS"
-
-# Запрашиваем выбор пользователя
-echo -n "Выберите номер бэкапа для восстановления (1-$BACKUP_COUNT) или 'q' для выхода: "
-read choice
-
-if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
-    echo "Операция отменена"
-    exit 0
+    # Индексы в массиве начинаются с 0, а grep -n с 1
+    selected_idx=$((selected_idx - 1))
+    SELECTED_BACKUP="${BACKUP_PATHS[$selected_idx]}"
+    
+    echo "Выбран бэкап: $(basename "$SELECTED_BACKUP")"
+else
+    # Стандартный выбор по номеру
+    # Выводим список бэкапов с номерами
+    i=1
+    while IFS= read -r backup; do
+        filename=$(basename "$backup")
+        # Извлекаем дату из имени файла
+        date_part=$(echo "$filename" | grep -oP "${DB_NAME}-\K[0-9]+" | head -1)
+        
+        # Форматируем дату, если она имеет ожидаемую длину
+        if [ ${#date_part} -eq 12 ]; then
+            year=${date_part:0:4}
+            month=${date_part:4:2}
+            day=${date_part:6:2}
+            hour=${date_part:8:2}
+            minute=${date_part:10:2}
+            echo "$i) $filename (дата: ${year}-${month}-${day} ${hour}:${minute})"
+        else
+            echo "$i) $filename"
+        fi
+        i=$((i+1))
+    done <<< "$RECENT_BACKUPS"
+    
+    # Запрашиваем выбор пользователя
+    echo -n "Выберите номер бэкапа для восстановления (1-$BACKUP_COUNT) или 'q' для выхода: "
+    read choice
+    
+    if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+        echo "Операция отменена"
+        exit 0
+    fi
+    
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$BACKUP_COUNT" ]; then
+        echo "Некорректный выбор"
+        exit 1
+    fi
+    
+    # Получаем выбранный файл бэкапа
+    SELECTED_BACKUP=$(echo "$RECENT_BACKUPS" | sed -n "${choice}p")
+    echo "Выбран бэкап: $(basename "$SELECTED_BACKUP")"
 fi
-
-if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$BACKUP_COUNT" ]; then
-    echo "Некорректный выбор"
-    exit 1
-fi
-
-# Получаем выбранный файл бэкапа
-SELECTED_BACKUP=$(echo "$RECENT_BACKUPS" | sed -n "${choice}p")
-echo "Выбран бэкап: $(basename "$SELECTED_BACKUP")"
 
 # Запрашиваем подтверждение
 echo -n "Вы уверены, что хотите восстановить базу данных $DB_NAME из этого бэкапа? (y/n): "
