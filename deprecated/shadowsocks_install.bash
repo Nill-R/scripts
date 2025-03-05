@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Определение констант
 UPSTREAM_URL="https://api.github.com/repos/shadowsocks/shadowsocks-rust/releases/latest"

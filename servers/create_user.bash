@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 EXPECTED_ARGS=1
 E_BADARGS=65

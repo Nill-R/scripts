@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Файл с подсетями (укажите путь к вашему файлу)
 SUBNET_FILE="/etc/wireguard/local_networks.txt"

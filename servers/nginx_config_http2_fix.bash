@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Директория с конфигами Nginx
 CONFIG_DIR="/etc/nginx/sites-available"

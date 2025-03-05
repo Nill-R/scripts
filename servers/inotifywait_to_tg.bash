@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 display_usage() {
     printf "Usage: $(basename %s) directory for monitoring\n" "$0"

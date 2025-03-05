@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # ##############################################################################
 # Description:  Uses nftables to block full countries from accessing the server for all ports and protocols

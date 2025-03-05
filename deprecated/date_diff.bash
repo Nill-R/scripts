@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Read in the two dates
 read -r -p "Enter the first date (YYYY-MM-DD): " date1

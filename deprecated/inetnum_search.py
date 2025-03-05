@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
 import sys
 import os
 import requests
@@ -90,7 +93,6 @@ def process_file(rir, search_term):
                         start, end = range_str.split()
                     current_range = (start.strip(), end.strip())
 
-            # Исправленный отступ для этого блока
             elif ((rir == 'ripe' and line.startswith('mnt-by:')) or
                   (rir == 'arin' and line.startswith(('OrgName:', 'owner:'))) or
                   (rir == 'apnic' and line.startswith(('mnt-by:', 'descr:'))) or

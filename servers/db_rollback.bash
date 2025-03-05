@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Script created with Claude 3.7 Sonnet assistant(https://claude.ai) using self-hosted LibreChat
 

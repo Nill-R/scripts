@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <domain_list_file>"

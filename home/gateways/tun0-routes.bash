@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Пути к файлам со списками сетей, адресов и доменов (по одной записи на строку)
 LOCAL_NETWORKS_FILE="/etc/antirkn/local_networks.txt"

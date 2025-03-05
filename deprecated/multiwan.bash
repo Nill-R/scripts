@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 GW_DEFAULT="192.168.1.1" # Main gateway
 IF_DEFAULT="eth1"        # Main interface

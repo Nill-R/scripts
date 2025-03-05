@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # You need to set ZONE_ID and API_TOKEN in /etc/cloudflare/credentials file
 # ZONE_ID=your_zone_id

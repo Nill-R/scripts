@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 LICENSE_KEY=YOUR_LICENSE_KEY_HERE
 GEOIP_DIR=YOUR_GEOIP_DIR_HERE

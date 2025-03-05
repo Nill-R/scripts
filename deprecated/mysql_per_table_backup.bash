@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 # MySQL per table backup script
-# This script is licensed under GNU GPLv2+
 
 BACKUP=/path/to/backup/mysql-per-table
 MYSQL="$(which mysql)"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 PROD_PATH=/srv/web/prod
 STAGE_PATH=/srv/web/stage
