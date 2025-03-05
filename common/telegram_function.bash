@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Функция для отправки сообщений в Telegram
 send_telegram_message() {

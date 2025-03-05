@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Check if curl is installed
 if ! command -v curl &> /dev/null; then
