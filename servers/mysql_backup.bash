@@ -20,7 +20,7 @@ check_commands() {
     fi
 
     if [ ! -x "$COMP" ]; then
-        echo "ERROR: The gzip command is not available or executable."
+        echo "ERROR: The zstd command is not available or executable."
         echo "Please make sure zstd is installed and accessible in your PATH."
         exit 1
     fi
