@@ -103,8 +103,8 @@ process_domain() {
             ;;
     esac
 
-    if ! eval $LEGO $ca_args --dns "$DNS_PROVIDER" \
-            $domains_args \
+    if ! eval "$LEGO" "$ca_args" --dns "$DNS_PROVIDER" \
+            "$domains_args" \
             --email "$EMAIL" \
             --path="$cert_path" \
             --accept-tos "$action"; then
