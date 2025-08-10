@@ -10,7 +10,7 @@ send_telegram_message() {
     fi
 
     # Путь к файлу конфигурации
-    CONFIG_FILE="/path/to/telegram_config.conf"
+    CONFIG_FILE="/etc/telegram_notify.conf"
 
     # Проверяем существование файла конфигурации
     if [ ! -f "$CONFIG_FILE" ]; then
