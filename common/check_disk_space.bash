@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
 # Путь к файлу с функцией отправки сообщений в Telegram
-TELEGRAM_FUNCTIONS="/usr/local/bin/telegram_functions.bash"
+TELEGRAM_FUNCTIONS="/usr/local/bin/telegram_function.bash"
 
 # Проверка наличия файла с функцией отправки сообщений
 if [ ! -f "$TELEGRAM_FUNCTIONS" ]; then
