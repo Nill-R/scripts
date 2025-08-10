@@ -17,7 +17,7 @@ source "$TELEGRAM_FUNCTIONS"
 get_space_and_inodes() {
     local current_space
     local current_inodes
-    local threshold=90
+    local threshold=95
 
     current_space=$(df / | grep / | awk '{ print $5}' | sed 's/%//g')
     current_inodes=$(df -i / | grep / | awk '{ print $5}' | sed 's/%//g')
