@@ -3,7 +3,6 @@
 
 #  This will dump all your databases
 #  MongoDB backup script
-#  This script is licensed under GNU GPLv2 only
 
 DATE=$(date +%Y%m%d%H%M)
 BACKUP_PATH=/backup/mongodb

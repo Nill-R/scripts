@@ -3,7 +3,7 @@
 
 # version 2.0.2
 # © Sergey Voronov 2010
-# © Nill Ringil 2010-2022
+# © Nill Ringil 2010-2025
 # © LLM Claude 3.5 Sonnet 2024
 
 PATH=/sbin:/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/opt/bin:/snap/bin
