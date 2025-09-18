@@ -27,6 +27,7 @@ check_var() {
 }
 
 # Function to safely source a file, converting CRLF to LF if necessary
+# shellcheck source=/dev/null
 safe_source() {
     local file="$1"
     if [ -f "$file" ]; then
@@ -34,11 +35,14 @@ safe_source() {
         if grep -q $'\r' "$file"; then
             log "WARNING: $file contains CRLF line endings. Converting to LF."
             # Create a temporary file with LF line endings
-            local tmp_file=$(mktemp)
+            local tmp_file
+            tmp_file=$(mktemp)
             tr -d '\r' < "$file" > "$tmp_file"
+            # shellcheck source=/dev/null
             source "$tmp_file"
             rm "$tmp_file"
         else
+            # shellcheck source=/dev/null
             source "$file"
         fi
     else
