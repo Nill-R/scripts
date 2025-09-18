@@ -7,6 +7,7 @@
 DATE=$(date +%Y%m%d%H%M)
 BACKUP_PATH=/backup/mysql
 MYSQLDUMP=$(which mariadb-dump || which mysqldump)
+MYSQL_CMD=$(which mariadb || which mysql)
 COMP=$(which zstd)
 DAYS=8
 #MYSQL_USER="your_mysql_username"
@@ -49,7 +50,7 @@ create_backup_dir() {
 
 # Backup each database individually
 backup_databases() {
-    databases=$(mysql -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql)")
+    databases=$("$MYSQL_CMD" -e "SHOW DATABASES;" | grep -Ev "(Database|information_schema|performance_schema|mysql)")
     for db in $databases; do
         echo "Backing up database: $db"
         "$MYSQLDUMP" --single-transaction --routines --triggers --events "$db" > "$BACKUP_PATH/$db-$DATE.sql"
