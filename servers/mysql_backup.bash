@@ -6,7 +6,7 @@
 
 DATE=$(date +%Y%m%d%H%M)
 BACKUP_PATH=/backup/mysql
-MYSQLDUMP=$(which mysqldump)
+MYSQLDUMP=$(which mariadb-dump || which mysqldump)
 COMP=$(which zstd)
 DAYS=8
 #MYSQL_USER="your_mysql_username"
@@ -74,4 +74,4 @@ main() {
     echo "Backup completed successfully."
 }
 
-main
+main "$@"
