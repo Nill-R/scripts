@@ -8,8 +8,24 @@ DATE=$(date +%Y%m%d%H%M)
 BACKUP_PATH=/backup/mysql
 MYSQLDUMP=$(which mysqldump)
 COMP=$(which zstd)
+DAYS=8
 #MYSQL_USER="your_mysql_username"
 #MYSQL_PASSWORD="your_mysql_password"
+
+# Parse command line arguments
+parse_args() {
+    if [ "$1" = "--days" ]; then
+        if [ -n "$2" ] && [ "$2" -ge 0 ]; then
+            DAYS=$2
+            if [ "$DAYS" -eq 0 ]; then
+                DAYS=8
+            fi
+        else
+            echo "ERROR: Invalid or missing value for --days option."
+            exit 1
+        fi
+    fi
+}
 
 # Check if required commands are available
 check_commands() {
@@ -44,12 +60,13 @@ backup_databases() {
 
 # Purge old backups
 purge_old_backups() {
-    echo "Purging backups older than 8 days..."
-    find "$BACKUP_PATH" -name '*.sql.*' -type f -mtime +8 -exec rm -vf {} \;
+    echo "Purging backups older than $DAYS days..."
+    find "$BACKUP_PATH" -name '*.sql.*' -type f -mtime +$DAYS -exec rm -vf {} \;
 }
 
 # Main function
 main() {
+    parse_args "$@"
     check_commands
     create_backup_dir
     backup_databases
