@@ -152,8 +152,9 @@ for varsfile in "$LEGO_DIR"/*; do
     log "Running lego for $DOMAIN (action=$ACTION)"
     # capture output but don't allow set -e to kill the whole script
     set +e
+    export LEGO_DISABLE_CNAME_SUPPORT=true
     "$LEGO_BIN" --email "$EMAIL" --dns yandexcloud \
-        --domains "$DOMAIN" --domains "*.$DOMAIN" --path "$CERT_PATH" --accept-tos "$ACTION" 2>&1 | sed -u 's/^/[lego] /' | tee -a "$LOG_FILE"
+        --domains "$DOMAIN" --domains "*.$DOMAIN" --path "$CERT_PATH" --accept-tos --dns.resolvers 1.1.1.1 "$ACTION" 2>&1 | sed -u 's/^/[lego] /' | tee -a "$LOG_FILE"
     lego_rc=${PIPESTATUS[0]}
     set -e 2>/dev/null || true
 
