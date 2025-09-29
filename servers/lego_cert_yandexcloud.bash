@@ -17,39 +17,32 @@ for file in "$LEGO_DIR"/*; do
     log "=====" "Processing $file ====="
 
     # Сбрасываем переменные перед загрузкой нового файла
-    unset DOMAIN EMAIL YANDEX_CLOUD_FOLDER_ID YANDEX_CLOUD_SA_NAME
+    unset DOMAIN EMAIL YANDEX_CLOUD_FOLDER_ID YANDEX_CLOUD_SA_KEY_FILE
 
     # Загружаем переменные из файла
     source "$file"
 
     # Проверяем что заданы обязательные переменные
-    if [[ -z "${DOMAIN:-}" || -z "${YANDEX_CLOUD_FOLDER_ID:-}" || -z "${YANDEX_CLOUD_SA_NAME:-}" || -z "${EMAIL:-}" ]]; then
-        log "ERROR" "Пропущены обязательные переменные в $file (DOMAIN, YANDEX_CLOUD_FOLDER_ID, YANDEX_CLOUD_SA_NAME, EMAIL)"
+    if [[ -z "${DOMAIN:-}" || -z "${YANDEX_CLOUD_FOLDER_ID:-}" || -z "${YANDEX_CLOUD_SA_KEY_FILE:-}" || -z "${EMAIL:-}" ]]; then
+        log "ERROR" "Пропущены обязательные переменные в $file (DOMAIN, YANDEX_CLOUD_FOLDER_ID, YANDEX_CLOUD_SA_KEY_FILE, EMAIL)"
         continue
     fi
 
     CERT_DIR="$CERT_DIR_BASE/$DOMAIN"
     mkdir -p "$CERT_DIR"
 
-    # Путь к ключу и сертификату
-    KEY_FILE="$CERT_DIR/key.pem"
-    CERT_FILE="$CERT_DIR/cert.pem"
-    FULLCHAIN_FILE="$CERT_DIR/fullchain.pem"
+    export YANDEX_CLOUD_FOLDER_ID
+    export YANDEX_CLOUD_SERVICE_ACCOUNT_KEY_FILE="$YANDEX_CLOUD_SA_KEY_FILE"
 
-    # Запускаем lego renew
     if "$LEGO_BIN" \
         --email "$EMAIL" \
         --domains "$DOMAIN" \
         --path "$CERT_DIR" \
         --dns yandexcloud \
-        --dns.resolvers 8.8.8.8:53 \
-        --yandexcloud-folder-id "$YANDEX_CLOUD_FOLDER_ID" \
-        --yandexcloud-service-account-name "$YANDEX_CLOUD_SA_NAME" \
         renew --days 30 --reuse-key --no-random-sleep 2>&1 | tee -a "$LOG_FILE"; then
         
         log "INFO" "Успешно обновлён сертификат для $DOMAIN"
 
-        # Проверка nginx перед перезапуском
         if nginx -t 2>&1 | tee -a "$LOG_FILE"; then
             nginx -s reload
             log "INFO" "nginx перезапущен после обновления $DOMAIN"
