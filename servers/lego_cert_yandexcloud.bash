@@ -6,38 +6,35 @@ set -euo pipefail
 
 LOG_FILE="/var/log/lego/yandex-cloud-cert.log"
 mkdir -p "$(dirname "$LOG_FILE")"
+exec >>"$LOG_FILE" 2>&1
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-safe_source() {
-    local file="$1"
-    if [ -f "$file" ]; then
-        if grep -q $'\r' "$file"; then
-            log "WARNING: $file содержит CRLF, конвертирую в LF"
-            local tmp_file
-            tmp_file=$(mktemp)
-            tr -d '\r' < "$file" > "$tmp_file"
-            # shellcheck source=/dev/null
-            source "$tmp_file"
-            rm "$tmp_file"
-        else
-            # shellcheck source=/dev/null
-            source "$file"
-        fi
-    else
-        log "ERROR: Файл конфигурации $file не найден"
-        exit 1
-    fi
-}
+if [[ $# -ne 1 ]]; then
+    log "Usage: $0 /etc/lego/domain.tld"
+    exit 1
+fi
 
-check_var() {
-    if [ -z "${!1:-}" ]; then
-        log "ERROR: Переменная $1 не задана в конфигурации"
-        exit 1
-    fi
-}
+VARS_FILE="$1"
+
+if [[ ! -f "$VARS_FILE" ]]; then
+    log "ERROR: Variables file not found: $VARS_FILE"
+    exit 1
+fi
+
+# --- Загружаем переменные ---
+source "$VARS_FILE"
+
+# --- Проверяем обязательные переменные ---
+: "${DOMAIN:?ERROR: DOMAIN не задан в $VARS_FILE}"
+: "${YANDEX_CLOUD_FOLDER_ID:?ERROR: YANDEX_CLOUD_FOLDER_ID не задан}"
+: "${YANDEX_CLOUD_SA_NAME:?ERROR: YANDEX_CLOUD_SA_NAME не задан}"
+: "${EMAIL:?ERROR: EMAIL не задан}"
+
+CERT_PATH="/etc/letsencrypt/certificates/$DOMAIN"
+mkdir -p "$CERT_PATH"
 
 LEGO=$(command -v lego || true)
 if [ -z "$LEGO" ]; then
@@ -45,25 +42,9 @@ if [ -z "$LEGO" ]; then
     exit 1
 fi
 
-# читаем конфиг
-CONF_FILE="/etc/lego/${DOMAIN:-}"
-if [ -z "${DOMAIN:-}" ]; then
-    log "ERROR: Переменная DOMAIN не передана окружением"
-    exit 1
-fi
+log "===== $(date '+%Y-%m-%d %H:%M:%S') Starting certificate check for $DOMAIN ====="
 
-safe_source "$CONF_FILE"
-
-# проверяем обязательные переменные
-check_var "DOMAIN"
-check_var "YANDEX_CLOUD_FOLDER_ID"
-check_var "YANDEX_CLOUD_SA_NAME"
-check_var "EMAIL"
-
-CERT_PATH="/etc/letsencrypt/certificates/$DOMAIN"
-mkdir -p "$CERT_PATH"
-
-# генерируем новый IAM key для lego
+# --- Генерируем временный IAM key для lego ---
 IAM_KEY_JSON=$(mktemp)
 yc iam key create \
     --service-account-name "$YANDEX_CLOUD_SA_NAME" \
@@ -75,6 +56,7 @@ export YANDEX_CLOUD_FOLDER_ID
 
 rm -f "$IAM_KEY_JSON"
 
+# --- Определяем действие: run если сертификата нет, иначе renew ---
 ACTION="renew"
 if [ ! -d "$CERT_PATH" ] || [ -z "$(ls -A "$CERT_PATH")" ]; then
     log "Нет существующего сертификата, запускаю 'run'"
@@ -83,6 +65,7 @@ else
     log "Пробую обновить сертификат (renew)"
 fi
 
+# --- Запускаем lego ---
 set +e
 $LEGO --email "$EMAIL" \
     --dns yandexcloud \
@@ -98,6 +81,7 @@ if [ $LEGO_EXIT -ne 0 ]; then
     exit $LEGO_EXIT
 fi
 
+# --- Если был renew, проверяем и перезапускаем nginx ---
 if [ "$ACTION" = "renew" ]; then
     if command -v nginx >/dev/null && command -v systemctl >/dev/null; then
         if nginx -t; then
@@ -112,4 +96,4 @@ if [ "$ACTION" = "renew" ]; then
 fi
 
 log "Скрипт завершился успешно"
-exit 0
+log "===== $(date '+%Y-%m-%d %H:%M:%S') Finished certificate check for $DOMAIN ====="
