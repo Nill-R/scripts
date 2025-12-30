@@ -99,6 +99,7 @@ process_domain() {
 
     if ! eval "$LEGO" "$ca_args" --dns "$DNS_PROVIDER" \
             "$domains_args" \
+            --days 32 \
             --email "$EMAIL" \
             --path="$cert_path" \
             --accept-tos "$action"; then
