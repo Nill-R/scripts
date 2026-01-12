@@ -54,7 +54,7 @@ backup_databases() {
     for db in $databases; do
         echo "Backing up database: $db"
         "$MYSQLDUMP" --single-transaction --routines --triggers --events "$db" > "$BACKUP_PATH/$db-$DATE.sql"
-        "$COMP" -T0 -19 --rm "$BACKUP_PATH/$db-$DATE.sql"
+        "$COMP" -T0 --rm "$BACKUP_PATH/$db-$DATE.sql"
 
     done
 }
