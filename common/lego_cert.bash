@@ -3,22 +3,24 @@
 
 set -eo pipefail
 
-# Function to display the usage of the script
+DEFAULT_DAYS=32
+DAYS_BEFORE_EXPIRY="$DEFAULT_DAYS"
+
 display_usage() {
     echo "Usage: $(basename "$0") [OPTIONS]"
+    echo
     echo "Options:"
     echo "  -c, --config PATH   Specify custom config path"
+    echo "  -d, --days DAYS     Renew certificates if expiring in DAYS (default: $DEFAULT_DAYS)"
     echo "  -h, --help          Display this help message"
 }
 
-# Function for logging
 log() {
     local message="$1"
     local log_file="/var/log/lego/lego_cert.log"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $message" | tee -a "$log_file"
 }
 
-# Function to check if a variable is set
 check_var() {
     if [ -z "${!1}" ]; then
         log "ERROR: $1 is not set in the configuration file"
@@ -26,70 +28,60 @@ check_var() {
     fi
 }
 
-# Function to safely source a file, converting CRLF to LF if necessary
 # shellcheck source=/dev/null
 safe_source() {
     local file="$1"
-    if [ -f "$file" ]; then
-        # Check if file contains CRLF
-        if grep -q $'\r' "$file"; then
-            log "WARNING: $file contains CRLF line endings. Converting to LF."
-            # Create a temporary file with LF line endings
-            local tmp_file
-            tmp_file=$(mktemp)
-            tr -d '\r' < "$file" > "$tmp_file"
-            # shellcheck source=/dev/null
-            source "$tmp_file"
-            rm "$tmp_file"
-        else
-            # shellcheck source=/dev/null
-            source "$file"
-        fi
-    else
+
+    if [ ! -f "$file" ]; then
         log "ERROR: Configuration file $file not found"
         return 1
     fi
+
+    if grep -q $'\r' "$file"; then
+        log "WARNING: $file contains CRLF, converting"
+        local tmp
+        tmp=$(mktemp)
+        tr -d '\r' < "$file" > "$tmp"
+        source "$tmp"
+        rm -f "$tmp"
+    else
+        source "$file"
+    fi
 }
 
-# Function to check if directory is empty
 is_directory_empty() {
-    [ -z "$(ls -A "$1")" ]
+    [ -z "$(ls -A "$1" 2>/dev/null)" ]
 }
 
-
-# Function to process domain for a specific CA
 process_domain() {
     local domain="$1"
     local ca="$2"
     local cert_path="$3"
     local action="run"
 
-    if [ -d "$cert_path" ]; then
-        if is_directory_empty "$cert_path"; then
-            log "Empty certificate directory found for $domain. Attempting to obtain new certificate."
-            action="run"
-        else
-            action="renew"
-            # Backup existing certificates
-            cp -r "$cert_path" "${cert_path}.bak"
-        fi
+    if [ -d "$cert_path" ] && ! is_directory_empty "$cert_path"; then
+        action="renew"
     else
         mkdir -p "$cert_path"
     fi
 
-    log "Processing domain: $domain for $ca"
     export LEGO_DISABLE_CNAME_SUPPORT=true
 
-    local ca_args=""
-    local domains_args=""
+    local ca_args=()
+    local domain_args=()
+
     case "$ca" in
-        "ZeroSSL")
-            ca_args="--server https://acme.zerossl.com/v2/DV90 --eab --kid $ZEROSSL_EAB_KID --hmac $ZEROSSL_EAB_HMAC_KEY"
-            domains_args="--domains \"*.$domain\" --domains \"$domain\""
+        LetsEncrypt)
+            domain_args+=(--domains "*.$domain" --domains "$domain")
             ;;
-        "LetsEncrypt")
-            # Default ACME server, no additional arguments needed
-            domains_args="--domains \"*.$domain\" --domains \"$domain\""
+        ZeroSSL)
+            ca_args+=(
+                --server https://acme.zerossl.com/v2/DV90
+                --eab
+                --kid "$ZEROSSL_EAB_KID"
+                --hmac "$ZEROSSL_EAB_HMAC_KEY"
+            )
+            domain_args+=(--domains "*.$domain" --domains "$domain")
             ;;
         *)
             log "ERROR: Unknown CA $ca"
@@ -97,26 +89,44 @@ process_domain() {
             ;;
     esac
 
-    if ! eval "$LEGO" "$ca_args" --dns "$DNS_PROVIDER" \
-            "$domains_args" \
-            --email "$EMAIL" \
-            --path="$cert_path" \
-            --accept-tos "$action" \
-            --days 32; then
+    local cmd=(
+        "$LEGO"
+        "${ca_args[@]}"
+        --dns "$DNS_PROVIDER"
+        --email "$EMAIL"
+        --path "$cert_path"
+        --accept-tos
+        "${domain_args[@]}"
+    )
+
+    if [ "$action" = "renew" ]; then
+        cmd+=(renew --days "$DAYS_BEFORE_EXPIRY")
+    else
+        cmd+=(run)
+    fi
+
+    log "Processing $domain via $ca ($action)"
+
+    if ! "${cmd[@]}"; then
         log "ERROR: Failed to $action certificate for $domain with $ca"
         return 1
     fi
 
     log "Successfully processed $domain with $ca"
-    return 0
 }
 
-# Parse command line arguments
+# -------------------- args --------------------
+
 CONF_PATH=""
+
 while [[ $# -gt 0 ]]; do
-    case $1 in
+    case "$1" in
         -c|--config)
             CONF_PATH="$2"
+            shift 2
+            ;;
+        -d|--days)
+            DAYS_BEFORE_EXPIRY="$2"
             shift 2
             ;;
         -h|--help)
@@ -124,16 +134,19 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
             display_usage
             exit 1
             ;;
     esac
 done
 
-# Set default config path if not specified
+if ! [[ "$DAYS_BEFORE_EXPIRY" =~ ^[0-9]+$ ]]; then
+    log "ERROR: --days must be a positive integer"
+    exit 1
+fi
+
 if [ -z "$CONF_PATH" ]; then
-    if [ "$(id -u)" = 0 ]; then
+    if [ "$(id -u)" -eq 0 ]; then
         CONF_PATH="/etc"
     else
         CONF_PATH="$HOME/.local/etc"
@@ -141,90 +154,65 @@ if [ -z "$CONF_PATH" ]; then
     fi
 fi
 
-# Ensure log directory exists
 mkdir -p /var/log/lego
 
-# Check for lego installation
-LEGO=$(which lego)
-if [ ! -f "$LEGO" ]; then
-    log "ERROR: lego is not installed."
-    log "Please install lego: https://github.com/go-acme/lego"
+LEGO=$(command -v lego || true)
+if [ -z "$LEGO" ]; then
+    log "ERROR: lego not installed"
     exit 1
 fi
 
-# Check lego version (assuming 4.0.0 is minimum)
 LEGO_VERSION=$($LEGO --version | awk '{print $3}')
-if [ "$(printf '%s\n' "4.0.0" "$LEGO_VERSION" | sort -V | head -n1)" != "4.0.0" ]; then
-    log "ERROR: lego version must be at least 4.0.0"
+if [ "$(printf '%s\n' 4.0.0 "$LEGO_VERSION" | sort -V | head -n1)" != "4.0.0" ]; then
+    log "ERROR: lego >= 4.0.0 required"
     exit 1
 fi
 
-# Check for lego config directory
-if [ ! -d "$CONF_PATH/lego" ] || [ -z "$(ls -A "$CONF_PATH/lego/")" ]; then
-    log "ERROR: $CONF_PATH/lego does not exist or is empty"
+if [ ! -d "$CONF_PATH/lego" ] || [ -z "$(ls -A "$CONF_PATH/lego")" ]; then
+    log "ERROR: $CONF_PATH/lego missing or empty"
     exit 1
 fi
 
-# Create temp directory
-TEMP_DIR=$(mktemp -d /tmp/lego_cert.XXXXXXX)
+TEMP_DIR=$(mktemp -d /tmp/lego_cert.XXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
-cd "$TEMP_DIR" || exit
+cd "$TEMP_DIR" || exit 1
 
-# Process each domain configuration
 for config in "$CONF_PATH"/lego/*; do
-    # Use safe_source function instead of direct source
     if ! safe_source "$config"; then
-        log "Skipping configuration file $config due to error"
+        log "Skipping $config"
         continue
     fi
 
-    # Check required variables
-    if ! check_var "DOMAIN" || ! check_var "DNS_PROVIDER" || ! check_var "EMAIL"; then
-        log "Skipping domain $DOMAIN due to missing required variables"
+    if ! check_var DOMAIN || ! check_var DNS_PROVIDER || ! check_var EMAIL; then
+        log "Skipping invalid config $config"
         continue
     fi
 
-    # Process for LetsEncrypt
-    if ! process_domain "$DOMAIN" "LetsEncrypt" "$CONF_PATH/letsencrypt/$DOMAIN"; then
-        log "Failed to process $DOMAIN for LetsEncrypt, continuing with next CA"
-    fi
+    process_domain "$DOMAIN" LetsEncrypt "$CONF_PATH/letsencrypt/$DOMAIN" || true
 
-    # Check if ZeroSSL credentials exist and process for ZeroSSL
-    if [ -f "/etc/zerossl/credentials" ]; then
-        # Read ZeroSSL credentials
+    if [ -f /etc/zerossl/credentials ]; then
         ZEROSSL_API_KEY=$(sed -n '1p' /etc/zerossl/credentials)
         ZEROSSL_EAB_KID=$(sed -n '2p' /etc/zerossl/credentials)
         ZEROSSL_EAB_HMAC_KEY=$(sed -n '3p' /etc/zerossl/credentials)
 
-        # Check if all ZeroSSL credentials are present
-        if [ -z "$ZEROSSL_API_KEY" ] || [ -z "$ZEROSSL_EAB_KID" ] || [ -z "$ZEROSSL_EAB_HMAC_KEY" ]; then
-            log "ERROR: ZeroSSL credentials file is incomplete. Please ensure all three lines are present."
+        if [ -n "$ZEROSSL_API_KEY" ] && [ -n "$ZEROSSL_EAB_KID" ] && [ -n "$ZEROSSL_EAB_HMAC_KEY" ]; then
+            export ZEROSSL_API_KEY ZEROSSL_EAB_KID ZEROSSL_EAB_HMAC_KEY
+            process_domain "$DOMAIN" ZeroSSL "$CONF_PATH/zerossl/$DOMAIN" || true
         else
-            # Export ZeroSSL credentials
-            export ZEROSSL_API_KEY
-            export ZEROSSL_EAB_KID
-            export ZEROSSL_EAB_HMAC_KEY
-
-            if ! process_domain "$DOMAIN" "ZeroSSL" "$CONF_PATH/zerossl/$DOMAIN"; then
-                log "Failed to process $DOMAIN for ZeroSSL, continuing with next CA"
-            fi
+            log "ERROR: Incomplete ZeroSSL credentials"
         fi
     else
-        log "ZeroSSL credentials file not found. Skipping ZeroSSL certificate acquisition."
+        log "ZeroSSL credentials not found, skipping"
     fi
-
 done
 
-# Optionally restart Nginx
-if [ -x "$(command -v nginx)" ] && [ -x "$(command -v systemctl)" ]; then
+if command -v nginx >/dev/null && command -v systemctl >/dev/null; then
     if nginx -t; then
         systemctl restart nginx
-        log "Nginx restarted successfully"
+        log "Nginx restarted"
     else
-        log "ERROR: Nginx configuration test failed, not restarting"
+        log "ERROR: nginx config test failed"
     fi
-else
-    log "Nginx or systemctl not found, skipping Nginx restart"
 fi
 
 log "Script completed successfully"
