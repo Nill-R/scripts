@@ -12,6 +12,7 @@ send_telegram_message() {
     [ -z "$1" ] && return 1
     CONFIG_FILE="/etc/telegram-notify.conf"
     [ ! -f "$CONFIG_FILE" ] && return 1
+    # shellcheck source=/dev/null
     source "$CONFIG_FILE"
     [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ] && return 1
     URL="https://api.telegram.org/bot$BOT_TOKEN/sendMessage"
