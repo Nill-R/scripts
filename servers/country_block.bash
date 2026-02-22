@@ -97,7 +97,7 @@ for countrycode in "${countries[@]}"; do
     # Adding drop rules for the country set
     if [ "$tcp_ports" != "none" ]; then
         if [ "$tcp_ports" == "all" ]; then
-            $nft add rule inet filter input ip saddr @"${countrycode}" tcp drop
+            $nft add rule inet filter input ip saddr @"${countrycode}" meta l4proto tcp drop
         else
             IFS=',' read -ra ports <<< "$tcp_ports"
             for port in "${ports[@]}"; do
@@ -108,7 +108,7 @@ for countrycode in "${countries[@]}"; do
 
     if [ "$udp_ports" != "none" ]; then
         if [ "$udp_ports" == "all" ]; then
-            $nft add rule inet filter input ip saddr @"${countrycode}" udp drop
+            $nft add rule inet filter input ip saddr @"${countrycode}" meta l4proto udp drop
         else
             IFS=',' read -ra ports <<< "$udp_ports"
             for port in "${ports[@]}"; do
