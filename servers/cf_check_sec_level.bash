@@ -47,3 +47,5 @@ else
   print_with_timestamp  "Failed to fetch security level information from Cloudflare API."
   exit 1
 fi
+
+exit 0

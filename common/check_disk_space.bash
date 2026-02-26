@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
-# Путь к файлу с функцией отправки сообщений в Telegram
 TELEGRAM_FUNCTIONS="/usr/local/bin/telegram_function.bash"
 
-# Проверка наличия файла с функцией отправки сообщений
 if [ ! -f "$TELEGRAM_FUNCTIONS" ]; then
     echo "ERROR: Telegram functions file not found at $TELEGRAM_FUNCTIONS"
     exit 1
 fi
 
-# Загрузка функции отправки сообщений
 source "$TELEGRAM_FUNCTIONS"
 
-# Функция для получения занятого пространства и использованных инодов
 get_space_and_inodes() {
     local current_space
     local current_inodes
@@ -31,9 +27,10 @@ get_space_and_inodes() {
     fi
 }
 
-# Основная последовательность выполнения
 main() {
     get_space_and_inodes
 }
 
 main "$@"
+
+exit 0

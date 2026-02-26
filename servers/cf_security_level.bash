@@ -18,3 +18,5 @@ curl --request PATCH \
   --data '{
   "value": "'$SEC_LEVEL'"
 }'
+
+exit 0

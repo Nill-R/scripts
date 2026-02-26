@@ -51,3 +51,5 @@ printf "Username: %s\n" "$NEW_USER_NAME"
 printf "Password: %s\n" "$PASS"
 echo "----------------------------------------"
 echo "Script completed successfully."
+
+exit 0

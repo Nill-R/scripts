@@ -92,4 +92,5 @@ if [ "$errors" -gt 0 ]; then
 fi
 
 log "All databases updated successfully"
+
 exit 0

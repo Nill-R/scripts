@@ -31,3 +31,5 @@ else
     echo "Файл с подсетями не найден: $SUBNET_FILE" >&2
     exit 1
 fi
+
+exit 0
