@@ -6,7 +6,6 @@ import json
 from typing import Set
 
 def get_dns_records() -> Set[str]:
-    # API-ключ нужно будет заменить на настоящий
     API_KEY = 'YOUR_VULTR_API_KEY'
     
     headers = {
@@ -14,21 +13,17 @@ def get_dns_records() -> Set[str]:
         'Content-Type': 'application/json'
     }
 
-    # Сначала получим список всех DNS-доменов
     domains_url = 'https://api.vultr.com/v2/domains'
     domains_response = requests.get(domains_url, headers=headers)
     domains = domains_response.json()['domains']
 
-    ip_addresses = set()  # Используем множество для автоматического удаления дубликатов
+    ip_addresses = set()
 
-    # Для каждого домена получим записи
     for domain in domains:
         domain_name = domain['domain']
         records_url = f'https://api.vultr.com/v2/domains/{domain_name}/records'
         records_response = requests.get(records_url, headers=headers)
         records = records_response.json()['records']
-
-        # Собираем все A-записи
         for record in records:
             if record['type'] == 'A':
                 ip_addresses.add(record['data'])
@@ -38,9 +33,9 @@ def get_dns_records() -> Set[str]:
 if __name__ == "__main__":
     try:
         unique_ips = get_dns_records()
-        print("Найденные уникальные IP-адреса:")
+        print("Found unique IP addresses:")
         for ip in sorted(unique_ips):
             print(ip)
-        print(f"\nВсего найдено {len(unique_ips)} уникальных адресов")
+        print(f"Total unique addresses found: {len(unique_ips)}")
     except Exception as e:
-        print(f"Ой, что-то пошло не так: {str(e)}")
+        print(f"Error: {str(e)}")

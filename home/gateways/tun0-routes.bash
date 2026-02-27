@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
-# Пути к файлам со списками сетей, адресов и доменов (по одной записи на строку)
+# Paths to files with lists of networks, addresses, and domains (one record per line)
 LOCAL_NETWORKS_FILE="/etc/antirkn/local_networks.txt"
 REMOTE_NETWORKS_FILE="/etc/antirkn/remote_networks.txt"
 GOOGLE_NETWORKS_FILE="/etc/antirkn/google.txt"
@@ -11,10 +11,10 @@ INCLUDE_ADDRESSES_FILE="/etc/antirkn/include_addresses.txt"
 INCLUDE_DOMAINS_FILE="/etc/antirkn/include_domains.txt"
 TUN_INTERFACE="tun0"
 
-# Определяем default gw
+# Define default gw
 DEFAULT_GW=$(ip route show default | awk '/default/ {print $3}')
 
-# Функция для настройки маршрутов через tun0
+# Function to configure routes through tun0
 setup_routes() {
     local file="$1"
     
@@ -36,7 +36,7 @@ setup_routes() {
     done < "$file"
 }
 
-# Функция для принудительной маршрутизации адресов через default gw
+# Function to force routing addresses through default gw
 setup_include_addresses() {
     if [ ! -s "$INCLUDE_ADDRESSES_FILE" ]; then
         echo "Warning: $INCLUDE_ADDRESSES_FILE is empty" | logger -t tun0-routes
@@ -48,7 +48,7 @@ setup_include_addresses() {
     done < "$INCLUDE_ADDRESSES_FILE"
 }
 
-# Функция для резолвинга доменных имен и их маршрутизации через default gw
+# Function to resolve domain names and route them through default gw
 setup_include_domains() {
     if [ ! -s "$INCLUDE_DOMAINS_FILE" ]; then
         echo "Warning: $INCLUDE_DOMAINS_FILE is empty" | logger -t tun0-routes
@@ -69,7 +69,7 @@ setup_include_domains() {
     done < "$INCLUDE_DOMAINS_FILE"
 }
 
-# Основная логика
+# Main logic
 main() {
     for file in "$LOCAL_NETWORKS_FILE" "$REMOTE_NETWORKS_FILE" "$GOOGLE_NETWORKS_FILE" "$AKAMAI_NETWORKS_FILE"; do
         if [ ! -f "$file" ]; then
@@ -83,7 +83,7 @@ main() {
     setup_include_domains
 }
 
-# Запуск скрипта с выводом в лог
+# Run script with logging
 main 2>&1 | logger -t tun0-routes
 
 exit 0

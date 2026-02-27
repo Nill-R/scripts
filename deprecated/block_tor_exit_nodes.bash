@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 # Block Tor exit nodes with nftables
 
-# Функция для проверки наличия необходимых программ
+# Function to check for required programs
 check_dependencies() {
     local nft_path="$(which nft)"
     local curl_path="$(which curl)"
@@ -20,36 +20,35 @@ check_dependencies() {
     fi
 }
 
-# Функция для настройки nftables
+# Function to configure nftables
 setup_nftables() {
     nft add table ip filter
     nft add chain ip filter input '{ type filter hook input priority 0; }'
     nft add set ip filter torexitnodes '{ type ipv4_addr; flags dynamic, timeout; timeout 5m; }'
 }
 
-# Функция для добавления Tor выходных узлов в набор
+# Function to add Tor exit nodes to the set
 add_tor_exit_nodes() {
     curl -sSL "https://check.torproject.org/cgi-bin/TorBulkExitList.py?exit" | sed '/^#/d' | while read -r ip; do
         nft add element ip filter torexitnodes "{ $ip }"
     done
 }
 
-# Функция для блокировки трафика через Tor выходные узлы
+# Function to block traffic through Tor exit nodes
 block_tor_exit_nodes() {
     nft add rule ip filter input ip saddr @torexitnodes drop
 }
 
-# Функция для очистки
+# Function to clean up
 cleanup() {
     local temp_dir
     temp_dir=$(mktemp -d /tmp/script.XXXXXXX)
     cd "$temp_dir" || exit 1
-    # Здесь можно добавить код для удаления правил и набора nftables
     cd ~ || exit 1
     rm -rf "$temp_dir"
 }
 
-# Основная последовательность выполнения
+# Main execution sequence
 main() {
     local temp_dir
     temp_dir=$(mktemp -d /tmp/script.XXXXXXX)

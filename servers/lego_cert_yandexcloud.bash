@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
-# Массовая выдача/обновление сертификатов lego + Yandex.Cloud DNS
-# Обрабатывает все файлы в /etc/lego/*. Каждый файл должен экспортировать/устанавливать переменные:
+# Mass issuance/renewal of lego certificates + Yandex.Cloud DNS
+# Processes all files in /etc/lego/*. Each file must export/set variables:
 #   DOMAIN, EMAIL, YANDEX_CLOUD_FOLDER_ID
-# Варианты для авторизации (поддерживаются все):
-#   - YANDEX_CLOUD_IAM_TOKEN (base64 JSON)  -- прямо в файле
-#   - YANDEX_CLOUD_IAM_TOKEN_FILE=/path/to/file  -- lego примет файл
-#   - YANDEX_CLOUD_SA_KEY_FILE=/path/to/key.json  -- скрипт сделает base64 и экспортирует YANDEX_CLOUD_IAM_TOKEN
-#   - YANDEX_CLOUD_SA_NAME=my-sa  -- скрипт вызовет `yc iam key create` и сформирует YANDEX_CLOUD_IAM_TOKEN
+# Authorization variants (all supported):
+#   - YANDEX_CLOUD_IAM_TOKEN (base64 JSON)  -- directly in file
+#   - YANDEX_CLOUD_IAM_TOKEN_FILE=/path/to/file  -- lego will accept file
+#   - YANDEX_CLOUD_SA_KEY_FILE=/path/to/key.j   son  -- script will make base64 and export YANDEX_CLOUD_IAM_TOKEN
+#   - YANDEX_CLOUD_SA_NAME=my-sa  -- script will call `yc iam key create` and form YANDEX_CLOUD_IAM_TOKEN
 #
-# Документация lego: YANDEX_CLOUD_FOLDER_ID и YANDEX_CLOUD_IAM_TOKEN (_FILE) используются lego. :contentReference[oaicite:1]{index=1}
+# lego documentation: YANDEX_CLOUD_FOLDER_ID and YANDEX_CLOUD_IAM_TOKEN (_FILE) are used by lego. :contentReference[oaicite:1]{index=1}
 
 set -u
 set -o pipefail

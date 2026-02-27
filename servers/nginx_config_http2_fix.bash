@@ -5,7 +5,7 @@ CONFIG_DIR="/etc/nginx/sites-available"
 
 find "$CONFIG_DIR" -type f -name "*.conf" | while read -r file; do
     if grep -qE '^\s*listen.*443.*ssl.*http2.*$' "$file"; then
-        echo "Обрабатывается файл: $file"
+        echo "Processing file: $file"
         
         sed -i -E 's/(^\s*listen.*443.*ssl.*)http2(.*$)/\1\2/' "$file"
         sed -i -E 's/(^\s*listen.*\[::\]:443.*ssl.*)http2(.*$)/\1\2/' "$file"
@@ -20,6 +20,6 @@ find "$CONFIG_DIR" -type f -name "*.conf" | while read -r file; do
             { print }
         ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
     else
-        echo "Файл уже в корректном формате: $file"
+        echo "File already in correct format: $file"
     fi
 done

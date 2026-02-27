@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 
-#  This will dump all your databases
-#  MongoDB backup script
+# This will dump all your databases
+# MongoDB backup script
 
 DATE=$(date +%Y%m%d%H%M)
 BACKUP_PATH=/backup/mongodb

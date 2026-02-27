@@ -5,9 +5,9 @@
 
 set -e
 
-# Проверка наличия аргумента с именем сайта
+# Check for site name argument
 if [ $# -ne 1 ]; then
-    echo "Использование: $0 domain.site"
+    echo "Usage: $0 domain.site"
     exit 1
 fi
 
@@ -15,36 +15,36 @@ SITE_NAME="$1"
 SITE_PATH="/srv/web/${SITE_NAME}"
 BACKUP_PATH="/backup/mysql"
 
-# Проверка существования директории сайта
+# Check for site directory
 if [ ! -d "$SITE_PATH" ]; then
-    echo "Ошибка: Директория сайта $SITE_PATH не существует"
+    echo "Error: Site directory $SITE_PATH does not exist"
     exit 1
 fi
 
-# Функция для определения имени базы данных из конфигов
+# Function to determine database name from config files
 get_db_name() {
     local site_path="$1"
     local db_name=""
     
-    # Проверка на WordPress
+    # Check for WordPress
     if [ -f "${site_path}/wp-config.php" ]; then
-        # Игнорируем закомментированные строки (начинающиеся с // или /*)
+        # Ignore commented lines (starting with // or /*)
         db_name=$(grep -v '^\s*\/\/' "${site_path}/wp-config.php" | grep -v '^\s*\/\*' | grep DB_NAME | grep -oP "define\(\s*'DB_NAME',\s*'[^']*'\s*\)" | grep -oP "'[^']*'" | grep -oP "[^']*" | tail -1)
         if [ -n "$db_name" ]; then
             echo "$db_name"
             return
         fi
-    # Проверка на OpenCart
+    # Check for OpenCart
     elif [ -f "${site_path}/config.php" ]; then
-        # Игнорируем закомментированные строки для первого формата
+        # Ignore commented lines for first format
         db_name=$(grep -v '^\s*\/\/' "${site_path}/config.php" | grep -v '^\s*\/\*' | grep "'DB_DATABASE'" | grep -oP "'DB_DATABASE',\s*'[^']*'" | grep -oP "'[^']*'" | grep -oP "[^']*" | tail -1)
         
-        # Если не найдено, проверяем альтернативный формат OpenCart
+        # If not found, check alternative OpenCart format
         if [ -z "$db_name" ]; then
             db_name=$(grep -v '^\s*\/\/' "${site_path}/config.php" | grep -v '^\s*\/\*' | grep "define('DB_DATABASE'" | grep -oP "define\('DB_DATABASE',\s*'[^']*'\)" | grep -oP "'[^']*'" | grep -oP "[^']*" | tail -1)
         fi
         
-        # Еще один вариант для OpenCart
+        # Another OpenCart variant
         if [ -z "$db_name" ]; then
             db_name=$(grep -v '^\s*\/\/' "${site_path}/config.php" | grep -v '^\s*\/\*' | grep "db_database" | grep -oP "\['db_database'\]\s*=\s*'[^']*'" | grep -oP "'[^']*'" | grep -oP "[^']*" | tail -1)
         fi
@@ -55,34 +55,34 @@ get_db_name() {
         fi
     fi
     
-    echo "Не удалось определить имя базы данных"
+    echo "Error: Database name not found"
     exit 1
 }
 
-# Получаем имя базы данных
+# Get database name
 DB_NAME=$(get_db_name "$SITE_PATH")
-echo "Обнаружена база данных: $DB_NAME"
+echo "Database found: $DB_NAME"
 
-# Ищем доступные бэкапы
-echo "Поиск бэкапов для базы данных $DB_NAME..."
+# Search for available backups
+echo "Searching for backups for database $DB_NAME..."
 
-# Ищем все файлы бэкапов с разными расширениями
+# Search for all backup files with different extensions
 BACKUPS=$(find "$BACKUP_PATH" -type f -name "${DB_NAME}-*.sql.*" | sort -r)
 
 if [ -z "$BACKUPS" ]; then
-    echo "Бэкапы для базы данных $DB_NAME не найдены"
+    echo "Error: Backups for database $DB_NAME not found"
     exit 1
 fi
 
-# Выбираем последние 5 бэкапов
+# Select the last 5 backups
 RECENT_BACKUPS=$(echo "$BACKUPS" | head -5)
 BACKUP_COUNT=$(echo "$RECENT_BACKUPS" | wc -l)
 
-echo "Найдено $BACKUP_COUNT последних бэкапов:"
+echo "Found $BACKUP_COUNT recent backups:"
 
-# Проверяем наличие fzf
+# Check for fzf
 if command -v fzf >/dev/null 2>&1; then
-    echo "Используем fzf для выбора бэкапа..."
+    echo "Using fzf to select backup..."
     
     # Создаем массив с путями к бэкапам
     mapfile -t BACKUP_PATHS < <(echo "$RECENT_BACKUPS")
@@ -107,27 +107,27 @@ if command -v fzf >/dev/null 2>&1; then
         fi
     done
     
-    # Используем fzf для выбора
+    # Use fzf to select backup
     selected_idx=$(printf "%s\n" "${DISPLAY_NAMES[@]}" | fzf --height=40% --layout=reverse --border | grep -n "^" | cut -d ":" -f1)
     
-    # Проверяем, был ли сделан выбор
+    # Check if selection was made
     if [ -z "$selected_idx" ]; then
-        echo "Выбор не сделан, операция отменена"
+        echo "Selection not made, operation cancelled"
         exit 0
     fi
     
-    # Индексы в массиве начинаются с 0, а grep -n с 1
+    # Array indices start at 0, while grep -n starts at 1
     selected_idx=$((selected_idx - 1))
     SELECTED_BACKUP="${BACKUP_PATHS[$selected_idx]}"
     
-    echo "Выбран бэкап: $(basename "$SELECTED_BACKUP")"
+    echo "Selected backup: $(basename "$SELECTED_BACKUP")"
 else
-    # Стандартный выбор по номеру
-    # Выводим список бэкапов с номерами
+    # Standard selection by number
+    # Display list of backups with numbers
     i=1
     while IFS= read -r backup; do
         filename=$(basename "$backup")
-        # Извлекаем дату из имени файла
+        # Extract date from filename
         date_part=$(echo "$filename" | grep -oP "${DB_NAME}-\K[0-9]+" | head -1)
         
         # Форматируем дату, если она имеет ожидаемую длину
@@ -144,36 +144,36 @@ else
         i=$((i+1))
     done <<< "$RECENT_BACKUPS"
     
-    # Запрашиваем выбор пользователя
-    echo -n "Выберите номер бэкапа для восстановления (1-$BACKUP_COUNT) или 'q' для выхода: "
+    # Ask for user selection
+    echo -n "Select backup number to restore (1-$BACKUP_COUNT) or 'q' to exit: "
     read choice
     
     if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
-        echo "Операция отменена"
+        echo "Operation cancelled"
         exit 0
     fi
     
     if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "$BACKUP_COUNT" ]; then
-        echo "Некорректный выбор"
+        echo "Invalid selection"
         exit 1
     fi
     
-    # Получаем выбранный файл бэкапа
+    # Get selected backup file
     SELECTED_BACKUP=$(echo "$RECENT_BACKUPS" | sed -n "${choice}p")
-    echo "Выбран бэкап: $(basename "$SELECTED_BACKUP")"
+    echo "Selected backup: $(basename "$SELECTED_BACKUP")"
 fi
 
-# Запрашиваем подтверждение
-echo -n "Вы уверены, что хотите восстановить базу данных $DB_NAME из этого бэкапа? (y/n): "
+# Ask for confirmation
+echo -n "Are you sure you want to restore database $DB_NAME from this backup? (y/n): "
 read confirm
 
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Операция отменена"
+    echo "Operation cancelled"
     exit 0
 fi
 
-# Определяем тип сжатия и восстанавливаем базу
-echo "Восстановление базы данных $DB_NAME из бэкапа..."
+# Determine compression type and restore database
+echo "Restoring database $DB_NAME from backup..."
 
 if [[ "$SELECTED_BACKUP" == *.zst ]]; then
     zstd -dc "$SELECTED_BACKUP" | mysql "$DB_NAME"
@@ -182,8 +182,8 @@ elif [[ "$SELECTED_BACKUP" == *.xz ]]; then
 elif [[ "$SELECTED_BACKUP" == *.gz ]]; then
     gzip -dc "$SELECTED_BACKUP" | mysql "$DB_NAME"
 else
-    echo "Неизвестный формат сжатия бэкапа"
+    echo "Unknown backup compression format"
     exit 1
 fi
 
-echo "База данных $DB_NAME успешно восстановлена из бэкапа $(basename "$SELECTED_BACKUP")"
+echo "Database $DB_NAME successfully restored from backup $(basename "$SELECTED_BACKUP")"

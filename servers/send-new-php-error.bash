@@ -48,7 +48,7 @@ find /etc/php -type f -path "*/fpm/pool.d/*" -exec grep -l "php_admin_value\[err
         fi
         
         LAST_N=$(cat "$FLAG")
-        # Убедимся что LAST_N содержит число
+        # Ensure LAST_N contains a number
         [[ ! "$LAST_N" =~ ^[0-9]+$ ]] && LAST_N=0
         
         if [ "$CURR_N" -gt "$LAST_N" ]; then

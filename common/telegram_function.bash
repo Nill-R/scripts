@@ -3,21 +3,21 @@
 
 send_telegram_message() {
     if [ -z "$1" ]; then
-        echo "Ошибка: Сообщение не указано"
+        echo "Error: Message not specified"
         return 1
     fi
 
     CONFIG_FILE="/etc/telegram_notify.conf"
 
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo "Ошибка: Файл конфигурации не найден"
+        echo "Error: Configuration file not found"
         return 1
     fi
 
     source "$CONFIG_FILE"
 
     if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
-        echo "Ошибка: Отсутствуют необходимые данные в файле конфигурации"
+        echo "Error: Missing required data in configuration file"
         return 1
     fi
 
@@ -26,9 +26,9 @@ send_telegram_message() {
     curl -s -X POST "$URL" -d chat_id="$CHAT_ID" -d text="$1" > /dev/null
 
     if [ $? -eq 0 ]; then
-        echo "Сообщение успешно отправлено"
+        echo "Message sent successfully"
     else
-        echo "Ошибка при отправке сообщения"
+        echo "Error sending message"
         return 1
     fi
 }
