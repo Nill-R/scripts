@@ -45,14 +45,48 @@ mkdir -p "$(dirname "$LOG_FILE")"
 TEMP_DIR=$(mktemp -d /tmp/geoip_update.XXXXXX)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
+# -------------------- helpers --------------------
+
+sha256_of() {
+    sha256sum "$1" | awk '{print $1}'
+}
+
+# Try to fetch remote checksum file; returns 0 and prints hash on success
+fetch_remote_sha256() {
+    local url="$1"
+    local out
+    out=$(curl --fail --silent --show-error --location \
+               --connect-timeout 10 --max-time 30 \
+               "$url" 2>/dev/null) || return 1
+    # Accept bare hex hash (possibly followed by filename)
+    echo "$out" | awk '{print $1}' | grep -Eq '^[0-9a-fA-F]{64}$' || return 1
+    echo "$out" | awk '{print $1}'
+}
+
 # -------------------- download & install --------------------
 
 errors=0
+updated=0
+skipped=0
 
 for db in "${DATABASES[@]}"; do
     url="https://${domain}/${db}"
     tmp_file="${TEMP_DIR}/${db}"
     dest_file="${GEOIP_DIR}/${db}"
+
+    # ---- try remote checksum first (saves bandwidth if unchanged) ----
+    remote_hash=""
+    if remote_hash=$(fetch_remote_sha256 "https://${domain}/${db}.sha256"); then
+        log "Got remote SHA256 for $db: $remote_hash"
+        if [ -f "$dest_file" ]; then
+            local_hash=$(sha256_of "$dest_file")
+            if [ "$local_hash" = "$remote_hash" ]; then
+                log "SKIP: $db is already up-to-date (SHA256 match)"
+                (( skipped++ )) || true
+                continue
+            fi
+        fi
+    fi
 
     log "Downloading $db from $url"
 
@@ -71,13 +105,29 @@ for db in "${DATABASES[@]}"; do
             fi
         fi
 
-        # Atomic replace: backup old file, move new one in
+        # ---- compare hashes: skip replace if file hasn't changed ----
+        new_hash=$(sha256_of "$tmp_file")
+
+        if [ -n "$remote_hash" ] && [ "$new_hash" != "$remote_hash" ]; then
+            log "ERROR: SHA256 mismatch for $db (expected $remote_hash, got $new_hash)"
+            (( errors++ )) || true
+            continue
+        fi
+
         if [ -f "$dest_file" ]; then
+            old_hash=$(sha256_of "$dest_file")
+            if [ "$old_hash" = "$new_hash" ]; then
+                log "SKIP: $db is already up-to-date (SHA256 match after download)"
+                (( skipped++ )) || true
+                continue
+            fi
+            # Atomic replace: backup old file, move new one in
             cp -f "$dest_file" "${dest_file}.bak"
         fi
 
         mv -f "$tmp_file" "$dest_file"
-        log "Successfully updated $db"
+        log "Successfully updated $db (SHA256: $new_hash)"
+        (( updated++ )) || true
     else
         log "ERROR: Failed to download $db from $url"
         (( errors++ )) || true
@@ -87,10 +137,10 @@ done
 # -------------------- result --------------------
 
 if [ "$errors" -gt 0 ]; then
-    log "Completed with $errors error(s)"
+    log "Completed with $errors error(s) | updated: $updated | skipped (unchanged): $skipped"
     exit 1
 fi
 
-log "All databases updated successfully"
+log "All databases processed: updated $updated, skipped $skipped (already up-to-date)"
 
 exit 0
