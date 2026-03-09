@@ -12,7 +12,7 @@ EMAIL="$1"
 shift
 
 LEGO=/usr/local/bin/lego
-LEGO_PATH=/etc/lego
+LE_PATH=/etc/letsencrypt
 WEBROOT=/var/www/_letsencrypt
 
 args=()
@@ -21,7 +21,7 @@ for domain in "$@"; do
 done
 
 "$LEGO" \
-  --path="$LEGO_PATH" \
+  --path="$LE_PATH" \
   --email="$EMAIL" \
   --http \
   --http.webroot="$WEBROOT" \
