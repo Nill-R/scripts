@@ -15,6 +15,12 @@ LEGO=/usr/local/bin/lego
 LE_PATH=/etc/letsencrypt
 WEBROOT=/var/www/_letsencrypt
 
+LEGO_VERSION=$("$LEGO" --version 2>&1 | grep -oP '(?<=version )\d+' | head -1)
+if [ "$LEGO_VERSION" != "4" ]; then
+    echo "Warning: This script is designed for lego 4.x only (detected major version: ${LEGO_VERSION:-unknown})" >&2
+    exit 1
+fi
+
 args=()
 for domain in "$@"; do
     args+=(--domains="$domain")
