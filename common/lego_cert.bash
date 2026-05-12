@@ -163,6 +163,11 @@ if [ -z "$LEGO" ]; then
 fi
 
 LEGO_VERSION=$($LEGO --version | awk '{print $3}')
+LEGO_MAJOR="${LEGO_VERSION%%.*}"
+if [ "$LEGO_MAJOR" -ge 5 ] 2>/dev/null; then
+    log "WARNING: This script is designed to work with lego branch 4.x (detected version: $LEGO_VERSION)"
+    exit 1
+fi
 if [ "$(printf '%s\n' 4.0.0 "$LEGO_VERSION" | sort -V | head -n1)" != "4.0.0" ]; then
     log "ERROR: lego >= 4.0.0 required"
     exit 1
