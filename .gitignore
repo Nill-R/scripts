@@ -1,0 +1,10 @@
+.vscode/
+.lock
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+.crushrc
+.crush/
+AGENTS.md
